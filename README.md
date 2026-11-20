@@ -1,2 +1,0 @@
-# verahub-sdk
-VeraHub SDKs
