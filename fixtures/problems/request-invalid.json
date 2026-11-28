@@ -1,0 +1,13 @@
+{
+  "type": "/problems/request-invalid",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "The request is invalid.",
+  "code": "request-invalid",
+  "errors": [
+    {
+      "path": "limit",
+      "message": "Too big: expected number to be <=100"
+    }
+  ]
+}

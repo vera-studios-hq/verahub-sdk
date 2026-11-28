@@ -1,0 +1,7 @@
+{
+  "type": "/problems/cursor-invalid",
+  "code": "cursor-invalid",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "The cursor cannot continue this list; request the first page again."
+}

@@ -1,0 +1,7 @@
+{
+  "type": "/problems/user-token-expired",
+  "code": "user-token-expired",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "The user token has expired."
+}

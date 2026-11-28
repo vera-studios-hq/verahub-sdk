@@ -1,0 +1,7 @@
+{
+  "type": "/problems/sdk-unsupported",
+  "code": "sdk-unsupported",
+  "title": "Forbidden",
+  "status": 403,
+  "detail": "This SDK version is no longer supported; update the app's VeraHub SDK."
+}

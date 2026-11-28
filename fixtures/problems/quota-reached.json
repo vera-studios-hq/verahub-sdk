@@ -1,0 +1,7 @@
+{
+  "type": "/problems/quota-reached",
+  "code": "quota-reached",
+  "title": "Conflict",
+  "status": 409,
+  "detail": "This coupon is not available to your app right now."
+}

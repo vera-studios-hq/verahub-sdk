@@ -1,0 +1,7 @@
+{
+  "type": "/problems/temporarily-unavailable",
+  "code": "temporarily-unavailable",
+  "title": "Service Unavailable",
+  "status": 503,
+  "detail": "The code cannot be issued right now; try again shortly."
+}

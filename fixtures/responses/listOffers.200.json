@@ -1,0 +1,69 @@
+{
+  "items": [
+    {
+      "id": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+      "brand": {
+        "name": "Alpenwerk",
+        "logo": {
+          "url": "https://media.verahub.io/i/4f7c1e9a2b6d8f03.webp",
+          "width": 512,
+          "height": 512
+        },
+        "logoWide": {
+          "url": "https://media.verahub.io/i/9b2e6c4a1f8d7e50.webp",
+          "width": 768,
+          "height": 256
+        }
+      },
+      "valueText": "bis zu 25 %",
+      "title": "25 % auf Wanderschuhe",
+      "subline": "Für die ganze Familie",
+      "description": "Alpenwerk stellt Wanderschuhe und Outdoor-Bekleidung für jedes Wetter her. Mit dem Gutschein sparst du auf das gesamte Schuhsortiment.",
+      "images": {
+        "wide": {
+          "url": "https://media.verahub.io/i/c3d9a7e1f5b2046e.webp",
+          "width": 1600,
+          "height": 900
+        },
+        "square": {
+          "url": "https://media.verahub.io/i/e8a1f4c7b9d23605.webp",
+          "width": 1080,
+          "height": 1080
+        },
+        "tall": {
+          "url": "https://media.verahub.io/i/2a6f9d3c8e1b7054.webp",
+          "width": 1080,
+          "height": 1440
+        }
+      },
+      "categories": [
+        {
+          "key": "sports-outdoors",
+          "name": "Sport & Outdoor"
+        },
+        {
+          "key": "fashion",
+          "name": "Mode & Accessoires"
+        }
+      ],
+      "benefits": [
+        {
+          "id": "019a8f2e-5b10-7a42-8c1d-6e2f9b3a7c05",
+          "kind": "coupon",
+          "valueText": "25 %",
+          "title": "25 % auf Wanderschuhe",
+          "conditions": "Ab 80 € Bestellwert. Nicht mit anderen Aktionen kombinierbar.",
+          "endsAt": "2027-03-31T21:59:59.000Z"
+        },
+        {
+          "id": "019a8f2e-6d21-7b53-9e2f-7a3c1d4b8e16",
+          "kind": "coupon",
+          "valueText": "10 %",
+          "title": "10 % auf alles"
+        }
+      ]
+    }
+  ],
+  "feedId": "019a8f30-1e44-7c09-b2a8-5d6f3e9c1a27",
+  "nextCursor": "ctGx6vAiExQejJZ4oloF3GzuLrMw"
+}

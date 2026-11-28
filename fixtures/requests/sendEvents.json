@@ -1,0 +1,14 @@
+{
+  "sentAt": "2026-11-23T09:31:05.120Z",
+  "events": [
+    {
+      "id": "6c1f0b7e-2d4a-4e8b-9f13-a5c7d2e9b041",
+      "name": "offerViewed",
+      "occurredAt": "2026-11-23T09:30:12.480Z",
+      "properties": {
+        "offerId": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+        "feedId": "019a8f30-1e44-7c09-b2a8-5d6f3e9c1a27"
+      }
+    }
+  ]
+}

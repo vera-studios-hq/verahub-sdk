@@ -1,0 +1,7 @@
+{
+  "type": "/problems/user-mismatch",
+  "code": "user-mismatch",
+  "title": "Forbidden",
+  "status": 403,
+  "detail": "The user token belongs to another user than VeraHub-Expected-User names."
+}

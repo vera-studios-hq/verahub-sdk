@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Copies the publisher spec from a deployment's public URL into spec/publisher.json, records the
+# VeraHub commit it came from in spec/source.json, and rewrites the fixtures from its examples.
+#
+#   scripts/sync-spec <commit> [<spec URL>]
+#
+# <commit> is the VeraHub commit the deployment serves; the default URL is the development
+# deployment, which serves the newest spec.
+set -euo pipefail
+
+if [[ $# -lt 1 || $# -gt 2 ]]; then
+  echo "usage: scripts/sync-spec <commit> [<spec URL>]" >&2
+  exit 2
+fi
+commit="$1"
+url="${2:-https://publisher-api.dev.verahub.io/v1/openapi.json}"
+if [[ ! "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "the commit must be a full 40-character hash" >&2
+  exit 2
+fi
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+spec="$(mktemp)"
+trap 'rm -f "$spec"' EXIT
+
+curl --fail --silent --show-error --location "$url" -o "$spec"
+jq --exit-status '.openapi and .paths' "$spec" >/dev/null
+jq . "$spec" >"$root/spec/publisher.json"
+jq -n --arg commit "$commit" --arg url "$url" '{commit: $commit, url: $url}' >"$root/spec/source.json"
+"$root/scripts/fixtures"
+echo "spec/publisher.json is the spec of VeraHub $commit from $url"

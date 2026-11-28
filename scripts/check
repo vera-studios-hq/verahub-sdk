@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# The quality gate, as CI runs it: fixtures in step with the spec, the scripts' shellcheck,
+# formatting, a build without warnings, and the tests (those against a deployment run only with
+# VERAHUB_API_URL and VERAHUB_API_KEY set). Without a Swift toolchain on PATH, it runs Swift in
+# the official image with Podman or Docker.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
+image="docker.io/library/swift:6.4.2-noble@sha256:bca121f6eb59fd80340d1296887b2698ed8f3eb9eca7d80c181f8af769dc7ee0"
+
+swift_run() {
+  if command -v swift >/dev/null; then
+    swift "$@"
+  else
+    local engine
+    engine="$(command -v podman || command -v docker)" || {
+      echo "Neither swift nor podman or docker is installed." >&2
+      exit 1
+    }
+    # One build volume per checkout, so worktrees do not share a build.
+    local volume
+    volume="verahub-sdk-build-$(printf %s "$root" | sha256sum | cut -c1-12)"
+    "$engine" run --rm -v "$root:/src:z" -v "$volume:/src/.build:z" -w /src \
+      -e VERAHUB_API_URL -e VERAHUB_API_KEY "$image" swift "$@"
+  fi
+}
+
+scripts/fixtures --check
+if shellcheck --version >/dev/null 2>&1; then
+  shellcheck scripts/*
+else
+  echo "shellcheck is not installed; CI runs it on scripts/." >&2
+fi
+swift_run format lint --strict --recursive Package.swift Sources Tests
+swift_run build --build-tests -Xswiftc -warnings-as-errors
+swift_run test --skip-build

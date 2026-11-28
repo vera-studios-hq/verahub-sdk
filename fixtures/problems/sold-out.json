@@ -1,0 +1,7 @@
+{
+  "type": "/problems/sold-out",
+  "code": "sold-out",
+  "title": "Conflict",
+  "status": 409,
+  "detail": "This coupon has no codes left."
+}

@@ -1,0 +1,7 @@
+{
+  "type": "/problems/rate-limited",
+  "title": "Too Many Requests",
+  "status": 429,
+  "detail": "Too many requests; retry after the time in Retry-After.",
+  "code": "rate-limited"
+}

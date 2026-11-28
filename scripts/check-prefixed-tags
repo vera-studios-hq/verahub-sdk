@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# Checks that Swift Package Manager ignores the other SDKs' tags (`android-1.4.2`, `js-1.4.2`)
+# when it resolves this package's version, so they can share this repository's tags.
+#
+# It builds a package with the tags 0.1.0 and 0.2.0 and, on a later commit, android-1.4.2 and
+# js-1.4.2, and resolves an app that accepts any version from 0.1.0 up to 2.0.0. If prefixed
+# tags counted, 1.4.2 would win; it must resolve to 0.2.0.
+set -euo pipefail
+
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+git_quiet() { git -c user.name=check -c user.email=check@example.invalid -c init.defaultBranch=main "$@" >/dev/null; }
+
+mkdir -p "$work/lib/Sources/Lib" "$work/app/Sources/App"
+cd "$work/lib"
+cat >Package.swift <<'EOF'
+// swift-tools-version: 6.0
+import PackageDescription
+let package = Package(name: "Lib", products: [.library(name: "Lib", targets: ["Lib"])], targets: [.target(name: "Lib")])
+EOF
+echo 'public let version = "0.1.0"' >Sources/Lib/Lib.swift
+git_quiet init
+git_quiet add -A
+git_quiet commit -m 0.1.0
+git_quiet tag 0.1.0
+echo 'public let version = "0.2.0"' >Sources/Lib/Lib.swift
+git_quiet commit -am 0.2.0
+git_quiet tag 0.2.0
+echo 'public let version = "android"' >Sources/Lib/Lib.swift
+git_quiet commit -am android
+git_quiet tag android-1.4.2
+git_quiet tag js-1.4.2
+
+cd "$work/app"
+cat >Package.swift <<EOF
+// swift-tools-version: 6.0
+import PackageDescription
+let package = Package(
+  name: "App",
+  dependencies: [.package(url: "file://$work/lib", "0.1.0"..<"2.0.0")],
+  targets: [.executableTarget(name: "App", dependencies: [.product(name: "Lib", package: "lib")])])
+EOF
+echo 'import Lib; print(version)' >Sources/App/main.swift
+swift package resolve >/dev/null
+resolved="$(sed -n 's/.*"version" *: *"\([^"]*\)".*/\1/p' Package.resolved)"
+echo "$(swift --version 2>&1 | head -1): resolved $resolved"
+if [[ "$resolved" != "0.2.0" ]]; then
+  echo "Swift Package Manager did not ignore the prefixed tags: the SDKs need one version number." >&2
+  exit 1
+fi
+echo "Swift Package Manager ignores android-1.4.2 and js-1.4.2."
