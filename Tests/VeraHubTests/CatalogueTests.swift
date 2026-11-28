@@ -101,9 +101,7 @@ import Testing
     for call in calls {
       #expect(call.headers["Authorization"] == "Bearer t-a")
       #expect(call.headers["VeraHub-Expected-User"] == "u-48151623")
-      let names = try #require(call.headers["VeraHub-Client"]).split(separator: ",").map {
-        $0.split(separator: "=")[0].trimmingCharacters(in: .whitespaces)
-      }
+      let names = headerNames(try #require(call.headers["VeraHub-Client"]))
       #expect(Set(names).isSubset(of: ["sdk", "os", "app", "build", "device", "locale", "tz"]))
       #expect(
         call.headers["VeraHub-Client"]?.hasPrefix(
@@ -114,6 +112,33 @@ import Testing
     }
     #expect(api.received("GET", "/v1/me/offers")[0].query["category"] == ["fashion"])
     #expect(api.received("POST", "/v1/me/benefits/b-1/reveal")[0].query.isEmpty)
+  }
+
+  /// The member names of an RFC 9651 dictionary of strings; commas inside a quoted value
+  /// (a device such as `Mac14,2`) do not separate members.
+  private func headerNames(_ header: String) -> [String] {
+    var names: [String] = []
+    var member = ""
+    var quoted = false
+    var escaped = false
+    for character in header + "," {
+      if character == "," && !quoted {
+        names.append(
+          String(member.split(separator: "=", maxSplits: 1)[0]).trimmingCharacters(
+            in: .whitespaces))
+        member = ""
+        continue
+      }
+      member.append(character)
+      if escaped {
+        escaped = false
+      } else if quoted && character == "\\" {
+        escaped = true
+      } else if character == "\"" {
+        quoted.toggle()
+      }
+    }
+    return names
   }
 
   @Test func clientHeaderValuesAreAsciiStringsOfAtMost128Characters() {
