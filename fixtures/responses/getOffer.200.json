@@ -1,0 +1,123 @@
+{
+  "offer": {
+    "id": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+    "brand": {
+      "name": "Alpenwerk",
+      "logo": {
+        "url": "https://media.verahub.io/i/4f7c1e9a2b6d8f03.webp",
+        "width": 512,
+        "height": 512
+      },
+      "logoWide": {
+        "url": "https://media.verahub.io/i/9b2e6c4a1f8d7e50.webp",
+        "width": 768,
+        "height": 256
+      }
+    },
+    "valueText": "bis zu 25 %",
+    "title": "25 % auf Wanderschuhe",
+    "subline": "Für die ganze Familie",
+    "description": "Alpenwerk stellt Wanderschuhe und Outdoor-Bekleidung für jedes Wetter her. Mit dem Gutschein sparst du auf das gesamte Schuhsortiment.",
+    "images": {
+      "wide": {
+        "url": "https://media.verahub.io/i/c3d9a7e1f5b2046e.webp",
+        "width": 1600,
+        "height": 900
+      },
+      "square": {
+        "url": "https://media.verahub.io/i/e8a1f4c7b9d23605.webp",
+        "width": 1080,
+        "height": 1080
+      },
+      "tall": {
+        "url": "https://media.verahub.io/i/2a6f9d3c8e1b7054.webp",
+        "width": 1080,
+        "height": 1440
+      }
+    },
+    "categories": [
+      {
+        "key": "sports-outdoors",
+        "name": "Sport & Outdoor"
+      },
+      {
+        "key": "fashion",
+        "name": "Mode & Accessoires"
+      }
+    ],
+    "benefits": [
+      {
+        "id": "019a8f2e-5b10-7a42-8c1d-6e2f9b3a7c05",
+        "kind": "coupon",
+        "valueText": "25 %",
+        "title": "25 % auf Wanderschuhe",
+        "conditions": "Ab 80 € Bestellwert. Nicht mit anderen Aktionen kombinierbar.",
+        "endsAt": "2027-03-31T21:59:59.000Z"
+      },
+      {
+        "id": "019a8f2e-6d21-7b53-9e2f-7a3c1d4b8e16",
+        "kind": "coupon",
+        "valueText": "10 %",
+        "title": "10 % auf alles"
+      }
+    ]
+  },
+  "user": {
+    "benefits": [
+      {
+        "benefitId": "019a8f2e-5b10-7a42-8c1d-6e2f9b3a7c05",
+        "nextRevealAt": "2026-12-23T09:30:00.000Z",
+        "clickOut": {
+          "url": "https://go.verahub.de/c/Z_5x3itlMvapTalKrIRGLVRHZb_y2YHV"
+        }
+      },
+      {
+        "benefitId": "019a8f2e-6d21-7b53-9e2f-7a3c1d4b8e16",
+        "clickOut": {
+          "url": "https://go.verahub.de/c/Dh8iSZK7rqiLRGVHZ0tq5x3pTalKr4Ia"
+        }
+      }
+    ],
+    "holdings": [
+      {
+        "holding": {
+          "id": "019a8f2e-7c41-7d30-9b5e-3f0c2a6d8e14",
+          "kind": "coupon",
+          "benefitId": "019a8f2e-5b10-7a42-8c1d-6e2f9b3a7c05",
+          "offerId": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+          "heldAt": "2026-11-23T09:30:00.000Z",
+          "expiresAt": "2027-03-31T21:59:59.000Z",
+          "expired": false,
+          "clickOut": {
+            "url": "https://go.verahub.de/c/Z_5x3itlMvapTalKrIRGLVRHZb_y2YHV"
+          },
+          "coupon": {
+            "code": "ALPEN-7K4Q-92XD"
+          }
+        },
+        "benefit": {
+          "valueText": "25 %",
+          "title": "25 % auf Wanderschuhe",
+          "conditions": "Ab 80 € Bestellwert. Nicht mit anderen Aktionen kombinierbar."
+        },
+        "offer": {
+          "id": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+          "listed": true,
+          "brand": {
+            "name": "Alpenwerk",
+            "logo": {
+              "url": "https://media.verahub.io/i/4f7c1e9a2b6d8f03.webp",
+              "width": 512,
+              "height": 512
+            },
+            "logoWide": {
+              "url": "https://media.verahub.io/i/9b2e6c4a1f8d7e50.webp",
+              "width": 768,
+              "height": 256
+            }
+          }
+        }
+      }
+    ]
+  }
+}

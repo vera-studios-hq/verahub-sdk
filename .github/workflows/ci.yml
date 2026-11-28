@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    # Daily, so a change of the deployments' API shows up without a change here.
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  repository:
+    name: Fixtures and scripts
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: scripts/fixtures --check
+      - run: shellcheck scripts/*
+
+  linux:
+    name: Swift ${{ matrix.swift }} on Linux
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The oldest toolchain the package supports, and the newest.
+          - swift: "6.0"
+            image: docker.io/library/swift:6.0-noble@sha256:e6aab687b7ec16a68abcf485c6bca8afd481e33fb9c8bd9e74e7abffded12bc4
+          - swift: "6.4"
+            image: docker.io/library/swift:6.4.2-noble@sha256:bca121f6eb59fd80340d1296887b2698ed8f3eb9eca7d80c181f8af769dc7ee0
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - if: matrix.swift == '6.4'
+        run: swift format lint --strict --recursive Package.swift Sources Tests
+      - run: swift build --build-tests -Xswiftc -warnings-as-errors
+      - run: swift test --skip-build
+
+  apple:
+    name: iOS and macOS
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: xcodebuild -version
+      - name: Build for iOS 15 and later
+        run: |
+          for destination in "generic/platform=iOS" "generic/platform=iOS Simulator"; do
+            xcodebuild build -scheme VeraHub-Package -destination "$destination" \
+              SWIFT_TREAT_WARNINGS_AS_ERRORS=YES -quiet
+          done
+      - run: swift test
+      - name: Swift Package Manager ignores the other SDKs' tags
+        run: scripts/check-prefixed-tags
+
+  deployment:
+    name: Against ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    container: docker.io/library/swift:6.4.2-noble@sha256:bca121f6eb59fd80340d1296887b2698ed8f3eb9eca7d80c181f8af769dc7ee0
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The development deployment's seeded test app has a key that is public on purpose.
+          - name: development
+            url: https://publisher-api.dev.verahub.io
+            key: verahub_dev_sk_seedSeedSeedSeedSeedSeedSeedSeed3OLF5y
+          - name: sandbox
+            url: https://publisher-api.sandbox.verahub.io
+            secret: VERAHUB_SANDBOX_API_KEY
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test against the deployment
+        env:
+          VERAHUB_API_URL: ${{ matrix.url }}
+          VERAHUB_API_KEY: ${{ matrix.key || secrets[matrix.secret] }}
+        run: |
+          if [ -z "$VERAHUB_API_KEY" ]; then
+            echo "::notice::No API key for ${{ matrix.name }}; its tests are skipped."
+            exit 0
+          fi
+          swift test --filter VeraHubIntegrationTests

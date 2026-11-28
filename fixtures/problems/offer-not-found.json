@@ -1,0 +1,7 @@
+{
+  "type": "/problems/offer-not-found",
+  "code": "offer-not-found",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "No such offer is listed for this user."
+}

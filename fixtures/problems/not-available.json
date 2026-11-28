@@ -1,0 +1,7 @@
+{
+  "type": "/problems/not-available",
+  "code": "not-available",
+  "title": "Conflict",
+  "status": 409,
+  "detail": "This benefit is not available."
+}

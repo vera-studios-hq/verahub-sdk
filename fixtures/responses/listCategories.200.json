@@ -1,0 +1,64 @@
+{
+  "items": [
+    {
+      "key": "fashion",
+      "name": "Mode & Accessoires",
+      "offerCount": 12
+    },
+    {
+      "key": "health-beauty",
+      "name": "Gesundheit & Beauty",
+      "offerCount": 7
+    },
+    {
+      "key": "home-garden",
+      "name": "Wohnen & Garten",
+      "offerCount": 5
+    },
+    {
+      "key": "food-drinks",
+      "name": "Essen & Trinken",
+      "offerCount": 9
+    },
+    {
+      "key": "tech",
+      "name": "Technik",
+      "offerCount": 6
+    },
+    {
+      "key": "travel",
+      "name": "Reisen",
+      "offerCount": 0
+    },
+    {
+      "key": "entertainment",
+      "name": "Unterhaltung & Events",
+      "offerCount": 3
+    },
+    {
+      "key": "sports-outdoors",
+      "name": "Sport & Outdoor",
+      "offerCount": 8
+    },
+    {
+      "key": "kids",
+      "name": "Baby, Kind & Spielzeug",
+      "offerCount": 4
+    },
+    {
+      "key": "pets",
+      "name": "Tierbedarf",
+      "offerCount": 2
+    },
+    {
+      "key": "mobility",
+      "name": "Auto & Mobilität",
+      "offerCount": 0
+    },
+    {
+      "key": "finance-contracts",
+      "name": "Finanzen & Verträge",
+      "offerCount": 1
+    }
+  ]
+}

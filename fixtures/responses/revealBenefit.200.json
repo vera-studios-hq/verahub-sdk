@@ -1,0 +1,19 @@
+{
+  "outcome": "allocated",
+  "holding": {
+    "id": "019a8f2e-7c41-7d30-9b5e-3f0c2a6d8e14",
+    "kind": "coupon",
+    "benefitId": "019a8f2e-5b10-7a42-8c1d-6e2f9b3a7c05",
+    "offerId": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+    "heldAt": "2026-11-23T09:30:00.000Z",
+    "expiresAt": "2027-03-31T21:59:59.000Z",
+    "expired": false,
+    "clickOut": {
+      "url": "https://go.verahub.de/c/Z_5x3itlMvapTalKrIRGLVRHZb_y2YHV"
+    },
+    "coupon": {
+      "code": "ALPEN-7K4Q-92XD"
+    }
+  },
+  "nextRevealAt": "2026-12-23T09:30:00.000Z"
+}

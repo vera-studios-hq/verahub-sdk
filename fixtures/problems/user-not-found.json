@@ -1,0 +1,7 @@
+{
+  "type": "/problems/user-not-found",
+  "code": "user-not-found",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "The user of this token does not exist."
+}

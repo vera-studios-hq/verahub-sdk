@@ -1,0 +1,3126 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "VeraHub publisher API",
+    "description": "The API publishers' backends and apps call. Preview: it may still change, with notice, and a route whose feature is not built yet answers `501`.\n\nPaths under `/v1/me` answer browsers on any origin (CORS, without credentials), so apps in a web view can call them: they accept `Authorization`, `Content-Type`, `VeraHub-Client`, and `VeraHub-Expected-User` and expose `Retry-After` and `X-Request-Id`. Every other path sends no CORS headers, so an API key never works from a browser. A preflight (`OPTIONS`) anywhere under `/v1/me` answers `204` for the methods `GET`, `HEAD`, `PUT`, `PATCH`, `POST`, and `DELETE`, cacheable for 7200 seconds (browsers cap it lower). Every response under `/v1/me` belongs to one user and carries `Cache-Control: private, no-store`.\n\nEvery response a route answers carries `X-Request-Id`: the `X-Request-Id` the request sent, when it is 1 to 128 letters, digits, `_`, `.`, `:`, or `-`, and a new id otherwise; preflights and requests refused before a route answers (an unreadable body, a malformed URL) carry none. Browsers cannot send it: it is not an allowed CORS header. Quote it when reporting a problem.",
+    "version": "1"
+  },
+  "servers": [
+    {
+      "url": "https://publisher-api.dev.verahub.io"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "paths": {
+    "/v1/api-keys/{apiKeyId}": {
+      "get": {
+        "deprecated": true,
+        "operationId": "getApiKey",
+        "parameters": [
+          {
+            "name": "apiKeyId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKey"
+                },
+                "example": {
+                  "id": "019a8e71-2f60-7c3b-8d14-9a5e7b2c4f03",
+                  "name": "Backend production",
+                  "displayHint": "verahub_sk_...MYPq",
+                  "createdAt": "2026-11-02T14:05:00.000Z",
+                  "lastUsedAt": "2026-11-23T09:00:00.000Z",
+                  "revokedAt": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: `request-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "request-invalid": {
+                    "$ref": "#/components/examples/request-invalid"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: `publisher-api-key-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "publisher-api-key-invalid": {
+                    "$ref": "#/components/examples/publisher-api-key-invalid"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found: `publisher-api-key-not-found`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "publisher-api-key-not-found": {
+                    "$ref": "#/components/examples/publisher-api-key-not-found"
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: `rate-limited`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "rate-limited": {
+                    "$ref": "#/components/examples/rate-limited"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "internal-server-error": {
+                    "$ref": "#/components/examples/internal-server-error"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get one of your app's API keys. Deprecated: this route leaves the API"
+      }
+    },
+    "/v1/user-tokens": {
+      "post": {
+        "operationId": "createUserToken",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserTokenRequest"
+              },
+              "example": {
+                "userId": "u-48151623",
+                "country": "DE"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserToken"
+                },
+                "example": {
+                  "token": "example-user-token",
+                  "expiresAt": "2026-11-23T10:30:00.000Z",
+                  "expiresIn": 3600
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: `request-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "request-invalid": {
+                    "$ref": "#/components/examples/request-invalid"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: `publisher-api-key-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "publisher-api-key-invalid": {
+                    "$ref": "#/components/examples/publisher-api-key-invalid"
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: `rate-limited`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "rate-limited": {
+                    "$ref": "#/components/examples/rate-limited"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "internal-server-error": {
+                    "$ref": "#/components/examples/internal-server-error"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get a user token, valid 60 minutes: creates the user if new and replaces their attributes with the ones sent"
+      }
+    },
+    "/v1/users/{userId}": {
+      "delete": {
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "Your stable, opaque id for the user: 1 to 128 characters from `A-Z a-z 0-9 . _ ~ -`, the first a letter or digit, case-sensitive. Never an email address or anything else that identifies the person directly.",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$",
+              "description": "Your stable, opaque id for the user: 1 to 128 characters from `A-Z a-z 0-9 . _ ~ -`, the first a letter or digit, case-sensitive. Never an email address or anything else that identifies the person directly."
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No content."
+          },
+          "400": {
+            "description": "Bad Request: `request-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "request-invalid": {
+                    "$ref": "#/components/examples/request-invalid"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: `publisher-api-key-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "publisher-api-key-invalid": {
+                    "$ref": "#/components/examples/publisher-api-key-invalid"
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: `rate-limited`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "rate-limited": {
+                    "$ref": "#/components/examples/rate-limited"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "internal-server-error": {
+                    "$ref": "#/components/examples/internal-server-error"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Delete a user: their tokens stop working at once, and a later token request creates a new user without holdings or consent. Answers 204 whether or not the user existed"
+      }
+    },
+    "/v1/me/consent": {
+      "get": {
+        "operationId": "getConsent",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consent"
+                },
+                "example": {
+                  "analytics": true,
+                  "personalisation": false,
+                  "updatedAt": "2026-11-23T09:12:44.318Z"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: `user-token-expired`, `user-token-invalid`, `user-not-found`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-token-expired": {
+                    "$ref": "#/components/examples/user-token-expired"
+                  },
+                  "user-token-invalid": {
+                    "$ref": "#/components/examples/user-token-invalid"
+                  },
+                  "user-not-found": {
+                    "$ref": "#/components/examples/user-not-found"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: `user-mismatch`, `sdk-unsupported`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-mismatch": {
+                    "$ref": "#/components/examples/user-mismatch"
+                  },
+                  "sdk-unsupported": {
+                    "$ref": "#/components/examples/sdk-unsupported"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: `rate-limited`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "rate-limited": {
+                    "$ref": "#/components/examples/rate-limited"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "internal-server-error": {
+                    "$ref": "#/components/examples/internal-server-error"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          }
+        },
+        "summary": "Get the user's consent; both flags are false until the app sets them",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/VeraHubClient"
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubExpectedUser"
+          }
+        ],
+        "security": [
+          {
+            "userToken": []
+          }
+        ]
+      },
+      "put": {
+        "operationId": "replaceConsent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceConsentRequest"
+              },
+              "example": {
+                "analytics": true,
+                "personalisation": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Consent"
+                },
+                "example": {
+                  "analytics": true,
+                  "personalisation": false,
+                  "updatedAt": "2026-11-23T09:12:44.318Z"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: `request-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "request-invalid": {
+                    "$ref": "#/components/examples/request-invalid"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: `user-token-expired`, `user-token-invalid`, `user-not-found`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-token-expired": {
+                    "$ref": "#/components/examples/user-token-expired"
+                  },
+                  "user-token-invalid": {
+                    "$ref": "#/components/examples/user-token-invalid"
+                  },
+                  "user-not-found": {
+                    "$ref": "#/components/examples/user-not-found"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: `user-mismatch`, `sdk-unsupported`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-mismatch": {
+                    "$ref": "#/components/examples/user-mismatch"
+                  },
+                  "sdk-unsupported": {
+                    "$ref": "#/components/examples/sdk-unsupported"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: `rate-limited`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "rate-limited": {
+                    "$ref": "#/components/examples/rate-limited"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "internal-server-error": {
+                    "$ref": "#/components/examples/internal-server-error"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          }
+        },
+        "summary": "Replace the user's consent as a whole",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/VeraHubClient"
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubExpectedUser"
+          }
+        ],
+        "security": [
+          {
+            "userToken": []
+          }
+        ]
+      }
+    },
+    "/v1/me/benefits/{benefitId}/reveal": {
+      "post": {
+        "operationId": "revealBenefit",
+        "parameters": [
+          {
+            "name": "benefitId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubClient"
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubExpectedUser"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevealResult"
+                },
+                "example": {
+                  "outcome": "allocated",
+                  "holding": {
+                    "id": "019a8f2e-7c41-7d30-9b5e-3f0c2a6d8e14",
+                    "kind": "coupon",
+                    "benefitId": "019a8f2e-5b10-7a42-8c1d-6e2f9b3a7c05",
+                    "offerId": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+                    "heldAt": "2026-11-23T09:30:00.000Z",
+                    "expiresAt": "2027-03-31T21:59:59.000Z",
+                    "expired": false,
+                    "clickOut": {
+                      "url": "https://go.verahub.de/c/Z_5x3itlMvapTalKrIRGLVRHZb_y2YHV"
+                    },
+                    "coupon": {
+                      "code": "ALPEN-7K4Q-92XD"
+                    }
+                  },
+                  "nextRevealAt": "2026-12-23T09:30:00.000Z"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: `request-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "request-invalid": {
+                    "$ref": "#/components/examples/request-invalid"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: `user-token-expired`, `user-token-invalid`, `user-not-found`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-token-expired": {
+                    "$ref": "#/components/examples/user-token-expired"
+                  },
+                  "user-token-invalid": {
+                    "$ref": "#/components/examples/user-token-invalid"
+                  },
+                  "user-not-found": {
+                    "$ref": "#/components/examples/user-not-found"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: `user-mismatch`, `sdk-unsupported`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-mismatch": {
+                    "$ref": "#/components/examples/user-mismatch"
+                  },
+                  "sdk-unsupported": {
+                    "$ref": "#/components/examples/sdk-unsupported"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found: `benefit-not-found`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "benefit-not-found": {
+                    "$ref": "#/components/examples/benefit-not-found"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict: `sold-out`, `quota-reached`, `not-available`, `user-limit-reached`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "sold-out": {
+                    "$ref": "#/components/examples/sold-out"
+                  },
+                  "quota-reached": {
+                    "$ref": "#/components/examples/quota-reached"
+                  },
+                  "not-available": {
+                    "$ref": "#/components/examples/not-available"
+                  },
+                  "user-limit-reached": {
+                    "$ref": "#/components/examples/user-limit-reached"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: `rate-limited`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "rate-limited": {
+                    "$ref": "#/components/examples/rate-limited"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "internal-server-error": {
+                    "$ref": "#/components/examples/internal-server-error"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable: `temporarily-unavailable`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "temporarily-unavailable": {
+                    "$ref": "#/components/examples/temporarily-unavailable"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Reveal a coupon for the user: returns their code, the same one again when they already hold it. Safe to retry: a repeated request never hands out a second code",
+        "security": [
+          {
+            "userToken": []
+          }
+        ]
+      }
+    },
+    "/v1/me/offers": {
+      "get": {
+        "operationId": "listOffers",
+        "parameters": [
+          {
+            "name": "benefitKinds",
+            "required": true,
+            "in": "query",
+            "description": "The benefit kinds your app can show, repeated for several (`benefitKinds=coupon`). Required: only these kinds are returned, and lists and counts are computed from them, so a kind added later never reaches an app that was not built for it. A kind the API does not know is refused.",
+            "schema": {
+              "description": "The benefit kinds your app can show, repeated for several (`benefitKinds=coupon`). Required: only these kinds are returned, and lists and counts are computed from them, so a kind added later never reaches an app that was not built for it. A kind the API does not know is refused.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "x-extensible-enum": [
+                  "coupon"
+                ]
+              }
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Only offers in this category, by key; a key the API does not know yields an empty list.",
+            "schema": {
+              "description": "Only offers in this category, by key; a key the API does not know yields an empty list.",
+              "type": "string",
+              "maxLength": 64,
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Items per page, 1 to 100.",
+            "schema": {
+              "default": 50,
+              "description": "Items per page, 1 to 100.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "The previous page's `nextCursor`, to fetch the page after it; absent for the first page.",
+            "schema": {
+              "description": "The previous page's `nextCursor`, to fetch the page after it; absent for the first page.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            }
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubClient"
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubExpectedUser"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferList"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "id": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+                      "brand": {
+                        "name": "Alpenwerk",
+                        "logo": {
+                          "url": "https://media.verahub.io/i/4f7c1e9a2b6d8f03.webp",
+                          "width": 512,
+                          "height": 512
+                        },
+                        "logoWide": {
+                          "url": "https://media.verahub.io/i/9b2e6c4a1f8d7e50.webp",
+                          "width": 768,
+                          "height": 256
+                        }
+                      },
+                      "valueText": "bis zu 25 %",
+                      "title": "25 % auf Wanderschuhe",
+                      "subline": "Für die ganze Familie",
+                      "description": "Alpenwerk stellt Wanderschuhe und Outdoor-Bekleidung für jedes Wetter her. Mit dem Gutschein sparst du auf das gesamte Schuhsortiment.",
+                      "images": {
+                        "wide": {
+                          "url": "https://media.verahub.io/i/c3d9a7e1f5b2046e.webp",
+                          "width": 1600,
+                          "height": 900
+                        },
+                        "square": {
+                          "url": "https://media.verahub.io/i/e8a1f4c7b9d23605.webp",
+                          "width": 1080,
+                          "height": 1080
+                        },
+                        "tall": {
+                          "url": "https://media.verahub.io/i/2a6f9d3c8e1b7054.webp",
+                          "width": 1080,
+                          "height": 1440
+                        }
+                      },
+                      "categories": [
+                        {
+                          "key": "sports-outdoors",
+                          "name": "Sport & Outdoor"
+                        },
+                        {
+                          "key": "fashion",
+                          "name": "Mode & Accessoires"
+                        }
+                      ],
+                      "benefits": [
+                        {
+                          "id": "019a8f2e-5b10-7a42-8c1d-6e2f9b3a7c05",
+                          "kind": "coupon",
+                          "valueText": "25 %",
+                          "title": "25 % auf Wanderschuhe",
+                          "conditions": "Ab 80 € Bestellwert. Nicht mit anderen Aktionen kombinierbar.",
+                          "endsAt": "2027-03-31T21:59:59.000Z"
+                        },
+                        {
+                          "id": "019a8f2e-6d21-7b53-9e2f-7a3c1d4b8e16",
+                          "kind": "coupon",
+                          "valueText": "10 %",
+                          "title": "10 % auf alles"
+                        }
+                      ]
+                    }
+                  ],
+                  "feedId": "019a8f30-1e44-7c09-b2a8-5d6f3e9c1a27",
+                  "nextCursor": "ctGx6vAiExQejJZ4oloF3GzuLrMw"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: `request-invalid`, `cursor-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "request-invalid": {
+                    "$ref": "#/components/examples/request-invalid"
+                  },
+                  "cursor-invalid": {
+                    "$ref": "#/components/examples/cursor-invalid"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: `user-token-expired`, `user-token-invalid`, `user-not-found`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-token-expired": {
+                    "$ref": "#/components/examples/user-token-expired"
+                  },
+                  "user-token-invalid": {
+                    "$ref": "#/components/examples/user-token-invalid"
+                  },
+                  "user-not-found": {
+                    "$ref": "#/components/examples/user-not-found"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: `user-mismatch`, `sdk-unsupported`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-mismatch": {
+                    "$ref": "#/components/examples/user-mismatch"
+                  },
+                  "sdk-unsupported": {
+                    "$ref": "#/components/examples/sdk-unsupported"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: `rate-limited`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "rate-limited": {
+                    "$ref": "#/components/examples/rate-limited"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "internal-server-error": {
+                    "$ref": "#/components/examples/internal-server-error"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          }
+        },
+        "summary": "List the offers for the user, in VeraHub's order: every offer with at least one benefit of the requested kinds that the user can get now",
+        "security": [
+          {
+            "userToken": []
+          }
+        ]
+      }
+    },
+    "/v1/me/offers/{offerId}": {
+      "get": {
+        "operationId": "getOffer",
+        "parameters": [
+          {
+            "name": "offerId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "benefitKinds",
+            "required": true,
+            "in": "query",
+            "description": "The benefit kinds your app can show, repeated for several (`benefitKinds=coupon`). Required: only these kinds are returned, and lists and counts are computed from them, so a kind added later never reaches an app that was not built for it. A kind the API does not know is refused.",
+            "schema": {
+              "description": "The benefit kinds your app can show, repeated for several (`benefitKinds=coupon`). Required: only these kinds are returned, and lists and counts are computed from them, so a kind added later never reaches an app that was not built for it. A kind the API does not know is refused.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "x-extensible-enum": [
+                  "coupon"
+                ]
+              }
+            }
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubClient"
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubExpectedUser"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OfferDetail"
+                },
+                "example": {
+                  "offer": {
+                    "id": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+                    "brand": {
+                      "name": "Alpenwerk",
+                      "logo": {
+                        "url": "https://media.verahub.io/i/4f7c1e9a2b6d8f03.webp",
+                        "width": 512,
+                        "height": 512
+                      },
+                      "logoWide": {
+                        "url": "https://media.verahub.io/i/9b2e6c4a1f8d7e50.webp",
+                        "width": 768,
+                        "height": 256
+                      }
+                    },
+                    "valueText": "bis zu 25 %",
+                    "title": "25 % auf Wanderschuhe",
+                    "subline": "Für die ganze Familie",
+                    "description": "Alpenwerk stellt Wanderschuhe und Outdoor-Bekleidung für jedes Wetter her. Mit dem Gutschein sparst du auf das gesamte Schuhsortiment.",
+                    "images": {
+                      "wide": {
+                        "url": "https://media.verahub.io/i/c3d9a7e1f5b2046e.webp",
+                        "width": 1600,
+                        "height": 900
+                      },
+                      "square": {
+                        "url": "https://media.verahub.io/i/e8a1f4c7b9d23605.webp",
+                        "width": 1080,
+                        "height": 1080
+                      },
+                      "tall": {
+                        "url": "https://media.verahub.io/i/2a6f9d3c8e1b7054.webp",
+                        "width": 1080,
+                        "height": 1440
+                      }
+                    },
+                    "categories": [
+                      {
+                        "key": "sports-outdoors",
+                        "name": "Sport & Outdoor"
+                      },
+                      {
+                        "key": "fashion",
+                        "name": "Mode & Accessoires"
+                      }
+                    ],
+                    "benefits": [
+                      {
+                        "id": "019a8f2e-5b10-7a42-8c1d-6e2f9b3a7c05",
+                        "kind": "coupon",
+                        "valueText": "25 %",
+                        "title": "25 % auf Wanderschuhe",
+                        "conditions": "Ab 80 € Bestellwert. Nicht mit anderen Aktionen kombinierbar.",
+                        "endsAt": "2027-03-31T21:59:59.000Z"
+                      },
+                      {
+                        "id": "019a8f2e-6d21-7b53-9e2f-7a3c1d4b8e16",
+                        "kind": "coupon",
+                        "valueText": "10 %",
+                        "title": "10 % auf alles"
+                      }
+                    ]
+                  },
+                  "user": {
+                    "benefits": [
+                      {
+                        "benefitId": "019a8f2e-5b10-7a42-8c1d-6e2f9b3a7c05",
+                        "nextRevealAt": "2026-12-23T09:30:00.000Z",
+                        "clickOut": {
+                          "url": "https://go.verahub.de/c/Z_5x3itlMvapTalKrIRGLVRHZb_y2YHV"
+                        }
+                      },
+                      {
+                        "benefitId": "019a8f2e-6d21-7b53-9e2f-7a3c1d4b8e16",
+                        "clickOut": {
+                          "url": "https://go.verahub.de/c/Dh8iSZK7rqiLRGVHZ0tq5x3pTalKr4Ia"
+                        }
+                      }
+                    ],
+                    "holdings": [
+                      {
+                        "holding": {
+                          "id": "019a8f2e-7c41-7d30-9b5e-3f0c2a6d8e14",
+                          "kind": "coupon",
+                          "benefitId": "019a8f2e-5b10-7a42-8c1d-6e2f9b3a7c05",
+                          "offerId": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+                          "heldAt": "2026-11-23T09:30:00.000Z",
+                          "expiresAt": "2027-03-31T21:59:59.000Z",
+                          "expired": false,
+                          "clickOut": {
+                            "url": "https://go.verahub.de/c/Z_5x3itlMvapTalKrIRGLVRHZb_y2YHV"
+                          },
+                          "coupon": {
+                            "code": "ALPEN-7K4Q-92XD"
+                          }
+                        },
+                        "benefit": {
+                          "valueText": "25 %",
+                          "title": "25 % auf Wanderschuhe",
+                          "conditions": "Ab 80 € Bestellwert. Nicht mit anderen Aktionen kombinierbar."
+                        },
+                        "offer": {
+                          "id": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+                          "listed": true,
+                          "brand": {
+                            "name": "Alpenwerk",
+                            "logo": {
+                              "url": "https://media.verahub.io/i/4f7c1e9a2b6d8f03.webp",
+                              "width": 512,
+                              "height": 512
+                            },
+                            "logoWide": {
+                              "url": "https://media.verahub.io/i/9b2e6c4a1f8d7e50.webp",
+                              "width": 768,
+                              "height": 256
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: `request-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "request-invalid": {
+                    "$ref": "#/components/examples/request-invalid"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: `user-token-expired`, `user-token-invalid`, `user-not-found`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-token-expired": {
+                    "$ref": "#/components/examples/user-token-expired"
+                  },
+                  "user-token-invalid": {
+                    "$ref": "#/components/examples/user-token-invalid"
+                  },
+                  "user-not-found": {
+                    "$ref": "#/components/examples/user-not-found"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: `user-mismatch`, `sdk-unsupported`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-mismatch": {
+                    "$ref": "#/components/examples/user-mismatch"
+                  },
+                  "sdk-unsupported": {
+                    "$ref": "#/components/examples/sdk-unsupported"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found: `offer-not-found`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "offer-not-found": {
+                    "$ref": "#/components/examples/offer-not-found"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: `rate-limited`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "rate-limited": {
+                    "$ref": "#/components/examples/rate-limited"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "internal-server-error": {
+                    "$ref": "#/components/examples/internal-server-error"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          }
+        },
+        "summary": "Get one listed offer and, beside it, what belongs to the user: when each benefit can be revealed, where a tap leads, and what they hold from it",
+        "security": [
+          {
+            "userToken": []
+          }
+        ]
+      }
+    },
+    "/v1/me/categories": {
+      "get": {
+        "operationId": "listCategories",
+        "parameters": [
+          {
+            "name": "benefitKinds",
+            "required": true,
+            "in": "query",
+            "description": "The benefit kinds your app can show, repeated for several (`benefitKinds=coupon`). Required: only these kinds are returned, and lists and counts are computed from them, so a kind added later never reaches an app that was not built for it. A kind the API does not know is refused.",
+            "schema": {
+              "description": "The benefit kinds your app can show, repeated for several (`benefitKinds=coupon`). Required: only these kinds are returned, and lists and counts are computed from them, so a kind added later never reaches an app that was not built for it. A kind the API does not know is refused.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "x-extensible-enum": [
+                  "coupon"
+                ]
+              }
+            }
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubClient"
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubExpectedUser"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoryList"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "key": "fashion",
+                      "name": "Mode & Accessoires",
+                      "offerCount": 12
+                    },
+                    {
+                      "key": "health-beauty",
+                      "name": "Gesundheit & Beauty",
+                      "offerCount": 7
+                    },
+                    {
+                      "key": "home-garden",
+                      "name": "Wohnen & Garten",
+                      "offerCount": 5
+                    },
+                    {
+                      "key": "food-drinks",
+                      "name": "Essen & Trinken",
+                      "offerCount": 9
+                    },
+                    {
+                      "key": "tech",
+                      "name": "Technik",
+                      "offerCount": 6
+                    },
+                    {
+                      "key": "travel",
+                      "name": "Reisen",
+                      "offerCount": 0
+                    },
+                    {
+                      "key": "entertainment",
+                      "name": "Unterhaltung & Events",
+                      "offerCount": 3
+                    },
+                    {
+                      "key": "sports-outdoors",
+                      "name": "Sport & Outdoor",
+                      "offerCount": 8
+                    },
+                    {
+                      "key": "kids",
+                      "name": "Baby, Kind & Spielzeug",
+                      "offerCount": 4
+                    },
+                    {
+                      "key": "pets",
+                      "name": "Tierbedarf",
+                      "offerCount": 2
+                    },
+                    {
+                      "key": "mobility",
+                      "name": "Auto & Mobilität",
+                      "offerCount": 0
+                    },
+                    {
+                      "key": "finance-contracts",
+                      "name": "Finanzen & Verträge",
+                      "offerCount": 1
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: `request-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "request-invalid": {
+                    "$ref": "#/components/examples/request-invalid"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: `user-token-expired`, `user-token-invalid`, `user-not-found`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-token-expired": {
+                    "$ref": "#/components/examples/user-token-expired"
+                  },
+                  "user-token-invalid": {
+                    "$ref": "#/components/examples/user-token-invalid"
+                  },
+                  "user-not-found": {
+                    "$ref": "#/components/examples/user-not-found"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: `user-mismatch`, `sdk-unsupported`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-mismatch": {
+                    "$ref": "#/components/examples/user-mismatch"
+                  },
+                  "sdk-unsupported": {
+                    "$ref": "#/components/examples/sdk-unsupported"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: `rate-limited`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "rate-limited": {
+                    "$ref": "#/components/examples/rate-limited"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "internal-server-error": {
+                    "$ref": "#/components/examples/internal-server-error"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          }
+        },
+        "summary": "List every category in VeraHub's fixed order, each with the number of offers listed in it for the user, also when it is 0",
+        "security": [
+          {
+            "userToken": []
+          }
+        ]
+      }
+    },
+    "/v1/me/holdings": {
+      "get": {
+        "operationId": "listHoldings",
+        "parameters": [
+          {
+            "name": "benefitKinds",
+            "required": true,
+            "in": "query",
+            "description": "The benefit kinds your app can show, repeated for several (`benefitKinds=coupon`). Required: only these kinds are returned, and lists and counts are computed from them, so a kind added later never reaches an app that was not built for it. A kind the API does not know is refused.",
+            "schema": {
+              "description": "The benefit kinds your app can show, repeated for several (`benefitKinds=coupon`). Required: only these kinds are returned, and lists and counts are computed from them, so a kind added later never reaches an app that was not built for it. A kind the API does not know is refused.",
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "x-extensible-enum": [
+                  "coupon"
+                ]
+              }
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Items per page, 1 to 100.",
+            "schema": {
+              "default": 50,
+              "description": "Items per page, 1 to 100.",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "The previous page's `nextCursor`, to fetch the page after it; absent for the first page.",
+            "schema": {
+              "description": "The previous page's `nextCursor`, to fetch the page after it; absent for the first page.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            }
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubClient"
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubExpectedUser"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HoldingList"
+                },
+                "example": {
+                  "items": [
+                    {
+                      "holding": {
+                        "id": "019a8f2e-7c41-7d30-9b5e-3f0c2a6d8e14",
+                        "kind": "coupon",
+                        "benefitId": "019a8f2e-5b10-7a42-8c1d-6e2f9b3a7c05",
+                        "offerId": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+                        "heldAt": "2026-11-23T09:30:00.000Z",
+                        "expiresAt": "2027-03-31T21:59:59.000Z",
+                        "expired": false,
+                        "clickOut": {
+                          "url": "https://go.verahub.de/c/Z_5x3itlMvapTalKrIRGLVRHZb_y2YHV"
+                        },
+                        "coupon": {
+                          "code": "ALPEN-7K4Q-92XD"
+                        }
+                      },
+                      "benefit": {
+                        "valueText": "25 %",
+                        "title": "25 % auf Wanderschuhe",
+                        "conditions": "Ab 80 € Bestellwert. Nicht mit anderen Aktionen kombinierbar."
+                      },
+                      "offer": {
+                        "id": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+                        "listed": true,
+                        "brand": {
+                          "name": "Alpenwerk",
+                          "logo": {
+                            "url": "https://media.verahub.io/i/4f7c1e9a2b6d8f03.webp",
+                            "width": 512,
+                            "height": 512
+                          },
+                          "logoWide": {
+                            "url": "https://media.verahub.io/i/9b2e6c4a1f8d7e50.webp",
+                            "width": 768,
+                            "height": 256
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: `request-invalid`, `cursor-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "request-invalid": {
+                    "$ref": "#/components/examples/request-invalid"
+                  },
+                  "cursor-invalid": {
+                    "$ref": "#/components/examples/cursor-invalid"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: `user-token-expired`, `user-token-invalid`, `user-not-found`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-token-expired": {
+                    "$ref": "#/components/examples/user-token-expired"
+                  },
+                  "user-token-invalid": {
+                    "$ref": "#/components/examples/user-token-invalid"
+                  },
+                  "user-not-found": {
+                    "$ref": "#/components/examples/user-not-found"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: `user-mismatch`, `sdk-unsupported`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-mismatch": {
+                    "$ref": "#/components/examples/user-mismatch"
+                  },
+                  "sdk-unsupported": {
+                    "$ref": "#/components/examples/sdk-unsupported"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: `rate-limited`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "rate-limited": {
+                    "$ref": "#/components/examples/rate-limited"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "internal-server-error": {
+                    "$ref": "#/components/examples/internal-server-error"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          }
+        },
+        "summary": "List what the user holds, newest first, expired holdings included: the only way to codes from offers that are no longer listed",
+        "security": [
+          {
+            "userToken": []
+          }
+        ]
+      }
+    },
+    "/v1/me/events": {
+      "post": {
+        "operationId": "sendEvents",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendEventsRequest"
+              },
+              "example": {
+                "sentAt": "2026-11-23T09:31:05.120Z",
+                "events": [
+                  {
+                    "id": "6c1f0b7e-2d4a-4e8b-9f13-a5c7d2e9b041",
+                    "name": "offerViewed",
+                    "occurredAt": "2026-11-23T09:30:12.480Z",
+                    "properties": {
+                      "offerId": "019a8f2e-3a02-7f18-a4b6-1d9c8e5f2a70",
+                      "feedId": "019a8f30-1e44-7c09-b2a8-5d6f3e9c1a27"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No content.",
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request: `request-invalid`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "request-invalid": {
+                    "$ref": "#/components/examples/request-invalid"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized: `user-token-expired`, `user-token-invalid`, `user-not-found`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-token-expired": {
+                    "$ref": "#/components/examples/user-token-expired"
+                  },
+                  "user-token-invalid": {
+                    "$ref": "#/components/examples/user-token-invalid"
+                  },
+                  "user-not-found": {
+                    "$ref": "#/components/examples/user-not-found"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden: `user-mismatch`, `sdk-unsupported`.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "user-mismatch": {
+                    "$ref": "#/components/examples/user-mismatch"
+                  },
+                  "sdk-unsupported": {
+                    "$ref": "#/components/examples/sdk-unsupported"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests: `rate-limited`.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before retrying.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "rate-limited": {
+                    "$ref": "#/components/examples/rate-limited"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                },
+                "examples": {
+                  "internal-server-error": {
+                    "$ref": "#/components/examples/internal-server-error"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "$ref": "#/components/headers/UserCacheControl"
+              }
+            }
+          }
+        },
+        "summary": "Send up to 100 of the app's events, only with the user's analytics consent",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/VeraHubClient"
+          },
+          {
+            "$ref": "#/components/parameters/VeraHubExpectedUser"
+          }
+        ],
+        "security": [
+          {
+            "userToken": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiKey": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "displayHint": {
+            "type": "string",
+            "description": "The key's prefix and last 4 characters, e.g. `verahub_sk_...MYPq`."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastUsedAt": {
+            "description": "When the key last authenticated a request, to the hour.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "revokedAt": {
+            "description": "When the key was revoked; it authenticates nothing since.",
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "displayHint",
+          "createdAt",
+          "lastUsedAt",
+          "revokedAt"
+        ]
+      },
+      "Benefit": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "description": "The benefit kind. Fields specific to one kind, if it has any, sit in a part named after it.",
+            "x-extensible-enum": [
+              "coupon"
+            ]
+          },
+          "valueText": {
+            "type": "string",
+            "description": "The short value, up to 16 characters, e.g. \"25 %\"."
+          },
+          "title": {
+            "type": "string",
+            "description": "Up to 60 characters, e.g. \"25 % auf Wanderschuhe\"."
+          },
+          "conditions": {
+            "description": "What applies to it, up to 500 characters. Make it reachable before the user reveals the benefit.",
+            "type": "string"
+          },
+          "endsAt": {
+            "description": "When it can no longer be revealed; absent while no end is set.",
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "valueText",
+          "title"
+        ]
+      },
+      "BenefitForUser": {
+        "type": "object",
+        "properties": {
+          "benefitId": {
+            "type": "string"
+          },
+          "nextRevealAt": {
+            "description": "While a cooldown runs, when the user can reveal this benefit for a new code. Absent when a reveal answers at once: with a new holding, or with the one they hold for good.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "clickOut": {
+            "$ref": "#/components/schemas/ClickOut",
+            "description": "Where a tap leads; always present for a coupon."
+          }
+        },
+        "required": [
+          "benefitId"
+        ]
+      },
+      "Brand": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Up to 40 characters."
+          },
+          "logo": {
+            "$ref": "#/components/schemas/Image",
+            "description": "Square, 512 × 512, on an opaque background."
+          },
+          "logoWide": {
+            "$ref": "#/components/schemas/Image",
+            "description": "3:1, 768 × 256, on an opaque background; fall back to `logo`."
+          }
+        },
+        "required": [
+          "name",
+          "logo"
+        ]
+      },
+      "Category": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "description": "The category's key, e.g. `sports-outdoors`: a stable identifier that never changes and is never reused. Show the categories the API returns, not a fixed set of your own; to attach your own icons, map the keys you know and show a fallback for one you do not. Keys can be added and retired."
+          },
+          "name": {
+            "type": "string",
+            "description": "The German name, which can change."
+          },
+          "offerCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "The number of offers the offer list returns when the same caller filters by this category with the same `benefitKinds`; can be 0. Hide a category with a count of 0."
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "offerCount"
+        ]
+      },
+      "CategoryList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Category"
+            },
+            "description": "Every category, every time, in VeraHub's fixed order (reorder them if you like), each with its count, also when it is 0. Categories can be added and retired: build your categories from this list and do not rely on how many there are."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "ClickOut": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Open it unaltered in the system browser or an in-app browser tab (SFSafariViewController, Custom Tabs), never in a web view. Valid as long as the app shows the offer; fetch it again with the offer."
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "ClientEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The app's own id for the event, unique per user: an event sent twice counts once, so a retry is safe."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "x-extensible-enum": [
+              "offerViewed"
+            ],
+            "description": "`offerViewed`: an offer was at least half visible for one second; properties `offerId` and `feedId` (the list's `feedId`, up to 24 hours after that feed was loaded). Events with a name the API does not know are dropped, not refused."
+          },
+          "occurredAt": {
+            "description": "When it happened, by the device's clock.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "properties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "description": "The event's properties, by its name; string values."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "occurredAt",
+          "properties"
+        ]
+      },
+      "Consent": {
+        "type": "object",
+        "properties": {
+          "analytics": {
+            "type": "boolean",
+            "description": "Whether the user's activity may be measured."
+          },
+          "personalisation": {
+            "type": "boolean",
+            "description": "Whether offers may be personalised to the user."
+          },
+          "updatedAt": {
+            "description": "When the app last set the consent; absent while it never has.",
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "analytics",
+          "personalisation"
+        ]
+      },
+      "CreateUserTokenRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$",
+            "description": "Your stable, opaque id for the user: 1 to 128 characters from `A-Z a-z 0-9 . _ ~ -`, the first a letter or digit, case-sensitive. Never an email address or anything else that identifies the person directly."
+          },
+          "country": {
+            "description": "The user's country, which decides the offers they are shown.",
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          }
+        },
+        "required": [
+          "userId"
+        ]
+      },
+      "HeldBenefit": {
+        "type": "object",
+        "properties": {
+          "valueText": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "conditions": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "valueText",
+          "title"
+        ]
+      },
+      "HeldOffer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "listed": {
+            "type": "boolean",
+            "description": "Whether the offer is listed for the user now, so its detail can be opened."
+          },
+          "brand": {
+            "$ref": "#/components/schemas/Brand"
+          }
+        },
+        "required": [
+          "id",
+          "listed",
+          "brand"
+        ]
+      },
+      "Holding": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "description": "The benefit kind, which names the part below that carries the rest.",
+            "x-extensible-enum": [
+              "coupon"
+            ]
+          },
+          "benefitId": {
+            "type": "string"
+          },
+          "offerId": {
+            "type": "string"
+          },
+          "heldAt": {
+            "description": "When the user received it.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "description": "When it stops working at the brand's shop; absent if it never does.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "expired": {
+            "type": "boolean",
+            "description": "Whether `expiresAt` has passed. Expired holdings stay; hide them if you like."
+          },
+          "clickOut": {
+            "$ref": "#/components/schemas/ClickOut",
+            "description": "Where a tap leads; always present for a coupon."
+          },
+          "coupon": {
+            "$ref": "#/components/schemas/HoldingCoupon",
+            "description": "Present when `kind` is `coupon`."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "benefitId",
+          "offerId",
+          "heldAt",
+          "expired"
+        ]
+      },
+      "HoldingCoupon": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "The code to enter at the brand's checkout. Show it unaltered."
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "HoldingEntry": {
+        "type": "object",
+        "properties": {
+          "holding": {
+            "$ref": "#/components/schemas/Holding"
+          },
+          "benefit": {
+            "$ref": "#/components/schemas/HeldBenefit"
+          },
+          "offer": {
+            "$ref": "#/components/schemas/HeldOffer"
+          }
+        },
+        "required": [
+          "holding",
+          "benefit",
+          "offer"
+        ]
+      },
+      "HoldingList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HoldingEntry"
+            }
+          },
+          "nextCursor": {
+            "description": "Pass as `cursor` for the next page; absent on the last page. Opaque: do not build or store it.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "Image": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Absolute and immutable; do not build or alter it. A replaced image gets a new URL."
+          },
+          "width": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "Pixels."
+          },
+          "height": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991,
+            "description": "Pixels."
+          }
+        },
+        "required": [
+          "url",
+          "width",
+          "height"
+        ]
+      },
+      "Offer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "brand": {
+            "$ref": "#/components/schemas/Brand"
+          },
+          "valueText": {
+            "type": "string",
+            "description": "The short value, up to 16 characters, e.g. \"bis zu 25 %\"."
+          },
+          "title": {
+            "type": "string",
+            "description": "Up to 60 characters, e.g. \"25 % auf Wanderschuhe\"."
+          },
+          "subline": {
+            "description": "Up to 100 characters.",
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "description": "Plain text, up to 600 characters."
+          },
+          "images": {
+            "$ref": "#/components/schemas/OfferImages",
+            "description": "One image in three ratios; use the one your layout needs."
+          },
+          "categories": {
+            "minItems": 1,
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OfferCategory"
+            },
+            "description": "One to three, the offer's main category first."
+          },
+          "benefits": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Benefit"
+            },
+            "description": "Every benefit the user can get from the offer, of the requested kinds, in VeraHub's order."
+          }
+        },
+        "required": [
+          "id",
+          "brand",
+          "valueText",
+          "title",
+          "description",
+          "images",
+          "categories",
+          "benefits"
+        ],
+        "description": "An offer's texts can differ per user and per request: do not cache them across users. Texts are German plain text."
+      },
+      "OfferCategory": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$",
+            "description": "The category's key, e.g. `sports-outdoors`: a stable identifier that never changes and is never reused. Show the categories the API returns, not a fixed set of your own; to attach your own icons, map the keys you know and show a fallback for one you do not. Keys can be added and retired."
+          },
+          "name": {
+            "type": "string",
+            "description": "The German name, which can change."
+          }
+        },
+        "required": [
+          "key",
+          "name"
+        ]
+      },
+      "OfferDetail": {
+        "type": "object",
+        "properties": {
+          "offer": {
+            "$ref": "#/components/schemas/Offer",
+            "description": "The offer in the same shape as in the list."
+          },
+          "user": {
+            "$ref": "#/components/schemas/OfferForUser",
+            "description": "What belongs to this user, kept apart from the offer."
+          }
+        },
+        "required": [
+          "offer",
+          "user"
+        ]
+      },
+      "OfferForUser": {
+        "type": "object",
+        "properties": {
+          "benefits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BenefitForUser"
+            },
+            "description": "One entry per benefit in `offer.benefits`: when the user can reveal it, and where a tap leads."
+          },
+          "holdings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HoldingEntry"
+            },
+            "description": "What the user holds from any of the offer's benefits, newest first, also from benefits no longer listed."
+          }
+        },
+        "required": [
+          "benefits",
+          "holdings"
+        ]
+      },
+      "OfferImages": {
+        "type": "object",
+        "properties": {
+          "wide": {
+            "$ref": "#/components/schemas/Image",
+            "description": "16:9, 1600 × 900."
+          },
+          "square": {
+            "$ref": "#/components/schemas/Image",
+            "description": "1:1, 1080 × 1080."
+          },
+          "tall": {
+            "$ref": "#/components/schemas/Image",
+            "description": "3:4, 1080 × 1440."
+          }
+        },
+        "required": [
+          "wide",
+          "square",
+          "tall"
+        ]
+      },
+      "OfferList": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Offer"
+            }
+          },
+          "feedId": {
+            "type": "string",
+            "description": "This feed load's id, the same on every page of it. Offer views name it (`POST /v1/me/events`); a new load from the first page gets a new one."
+          },
+          "nextCursor": {
+            "description": "Pass as `cursor` for the next page; absent on the last page. Opaque: do not build or store it.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "feedId"
+        ]
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "URI reference identifying the problem type: `/problems/<code>`, or `about:blank` for plain HTTP errors."
+          },
+          "code": {
+            "description": "The problem's code, the last segment of `type`: branch on it. Codes are part of the compatibility promise; new ones can appear. Absent on plain HTTP errors (`about:blank`).",
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "description": "A description for developers, in English. Never show it to users.",
+            "type": "string"
+          },
+          "instance": {
+            "type": "string"
+          },
+          "requestId": {
+            "description": "The request's id, the same as the `X-Request-Id` header. Quote it when reporting a problem. Absent when the response carries no `X-Request-Id`.",
+            "type": "string"
+          },
+          "targetIds": {
+            "description": "The ids of what the problem is about, named like the parameters that take them.",
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "errors": {
+            "description": "Each invalid field of a rejected request.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProblemDetailsError"
+            }
+          },
+          "nextRevealAt": {
+            "description": "When the user can reveal again; only on `user-limit-reached`.",
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status"
+        ]
+      },
+      "ProblemDetailsError": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "message"
+        ]
+      },
+      "ReplaceConsentRequest": {
+        "type": "object",
+        "properties": {
+          "analytics": {
+            "type": "boolean",
+            "description": "Whether the user's activity may be measured."
+          },
+          "personalisation": {
+            "type": "boolean",
+            "description": "Whether offers may be personalised to the user."
+          }
+        },
+        "required": [
+          "analytics",
+          "personalisation"
+        ]
+      },
+      "RevealResult": {
+        "type": "object",
+        "properties": {
+          "outcome": {
+            "type": "string",
+            "description": "`allocated`: the user received the holding now. `already-held`: they hold it already, and it is returned again. `cooldown`: they may get a new code only from `nextRevealAt`; the holding is their latest. Treat an outcome you do not know as a success: it comes with a holding.",
+            "x-extensible-enum": [
+              "allocated",
+              "already-held",
+              "cooldown"
+            ]
+          },
+          "holding": {
+            "$ref": "#/components/schemas/Holding"
+          },
+          "nextRevealAt": {
+            "description": "When the user can reveal this benefit for a new code; absent when they never can (it is held for good).",
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "outcome",
+          "holding"
+        ]
+      },
+      "SendEventsRequest": {
+        "type": "object",
+        "properties": {
+          "sentAt": {
+            "description": "When this request is sent, by the device's clock, the same clock as `occurredAt`. Set it anew on every retry.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "events": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientEvent"
+            }
+          }
+        },
+        "required": [
+          "sentAt",
+          "events"
+        ]
+      },
+      "UserToken": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "description": "The user token for your app, `Authorization: Bearer <token>`. Opaque: do not read its contents."
+          },
+          "expiresAt": {
+            "description": "When the token expires.",
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991,
+            "description": "Seconds until the token expires (3600)."
+          }
+        },
+        "required": [
+          "token",
+          "expiresAt",
+          "expiresIn"
+        ]
+      }
+    },
+    "parameters": {
+      "VeraHubClient": {
+        "name": "VeraHub-Client",
+        "in": "header",
+        "required": false,
+        "description": "What the request comes from, as a structured field dictionary (RFC 9651) of ASCII strings (`appearance=\"dark\"`, never a bare token or a display string; the SDKs drop or replace other characters): `sdk` (SDK name and version), `os` (platform and OS version), `app` (app version), `build` (app build), `device` (device model), `locale` (BCP 47), `tz` (IANA time zone), `screen` (screen size class), `text-size` (text size setting), `appearance` (`light` or `dark`), and `network` (connection type). Every name is optional; unknown names, values over 128 characters, and other types are ignored, a header that does not parse (a non-ASCII character, for one) is ignored as a whole, and more names can be added. The SDKs send it on every request; an app that calls the API without an SDK sends it itself. `sdk` is `<sdk name>/<version>`, the name in lowercase (`swift/0.3.0`): an SDK version that is no longer served gets `403` `sdk-unsupported`, only for a security problem or a removed API version and announced at least 6 months ahead. A request without `sdk` is served.",
+        "schema": {
+          "type": "string"
+        },
+        "example": "sdk=\"swift/0.3.0\", os=\"ios/18.2\", app=\"5.4.1\", build=\"5410\", locale=\"de-DE\", tz=\"Europe/Berlin\""
+      },
+      "VeraHubExpectedUser": {
+        "name": "VeraHub-Expected-User",
+        "in": "header",
+        "required": false,
+        "description": "The `userId` the app believes it acts for. A user token of another user is refused with `403` `user-mismatch`, so a token left over from before a user switch never shows one user another's coupons. Any other value, a malformed one included, gets `user-mismatch`; without the header the request is served. The SDKs always send it.",
+        "schema": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._~-]{0,127}$"
+        },
+        "example": "u-48151623"
+      }
+    },
+    "headers": {
+      "UserCacheControl": {
+        "description": "The response belongs to one user; no cache keeps it.",
+        "schema": {
+          "type": "string",
+          "const": "private, no-store"
+        }
+      }
+    },
+    "examples": {
+      "benefit-not-found": {
+        "summary": "No such benefit.",
+        "value": {
+          "type": "/problems/benefit-not-found",
+          "code": "benefit-not-found",
+          "title": "Not Found",
+          "status": 404,
+          "detail": "No such benefit."
+        }
+      },
+      "cursor-invalid": {
+        "summary": "The cursor cannot continue this list; request the first page again.",
+        "value": {
+          "type": "/problems/cursor-invalid",
+          "code": "cursor-invalid",
+          "title": "Bad Request",
+          "status": 400,
+          "detail": "The cursor cannot continue this list; request the first page again."
+        }
+      },
+      "internal-server-error": {
+        "summary": "Internal Server Error",
+        "value": {
+          "type": "about:blank",
+          "title": "Internal Server Error",
+          "status": 500
+        }
+      },
+      "not-available": {
+        "summary": "This benefit is not available.",
+        "value": {
+          "type": "/problems/not-available",
+          "code": "not-available",
+          "title": "Conflict",
+          "status": 409,
+          "detail": "This benefit is not available."
+        }
+      },
+      "offer-not-found": {
+        "summary": "No such offer is listed for this user.",
+        "value": {
+          "type": "/problems/offer-not-found",
+          "code": "offer-not-found",
+          "title": "Not Found",
+          "status": 404,
+          "detail": "No such offer is listed for this user."
+        }
+      },
+      "publisher-api-key-invalid": {
+        "summary": "A valid publisher API key is required in the Authorization header: Bearer <key>.",
+        "value": {
+          "type": "/problems/publisher-api-key-invalid",
+          "code": "publisher-api-key-invalid",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "A valid publisher API key is required in the Authorization header: Bearer <key>."
+        }
+      },
+      "publisher-api-key-not-found": {
+        "summary": "No such publisher API key.",
+        "value": {
+          "type": "/problems/publisher-api-key-not-found",
+          "code": "publisher-api-key-not-found",
+          "title": "Not Found",
+          "status": 404,
+          "detail": "No such publisher API key."
+        }
+      },
+      "quota-reached": {
+        "summary": "This coupon is not available to your app right now.",
+        "value": {
+          "type": "/problems/quota-reached",
+          "code": "quota-reached",
+          "title": "Conflict",
+          "status": 409,
+          "detail": "This coupon is not available to your app right now."
+        }
+      },
+      "rate-limited": {
+        "summary": "Too many requests; retry after the time in Retry-After.",
+        "value": {
+          "type": "/problems/rate-limited",
+          "title": "Too Many Requests",
+          "status": 429,
+          "detail": "Too many requests; retry after the time in Retry-After.",
+          "code": "rate-limited"
+        }
+      },
+      "request-invalid": {
+        "summary": "The request is invalid.",
+        "value": {
+          "type": "/problems/request-invalid",
+          "title": "Bad Request",
+          "status": 400,
+          "detail": "The request is invalid.",
+          "code": "request-invalid",
+          "errors": [
+            {
+              "path": "limit",
+              "message": "Too big: expected number to be <=100"
+            }
+          ]
+        }
+      },
+      "sdk-unsupported": {
+        "summary": "This SDK version is no longer supported; update the app's VeraHub SDK.",
+        "value": {
+          "type": "/problems/sdk-unsupported",
+          "code": "sdk-unsupported",
+          "title": "Forbidden",
+          "status": 403,
+          "detail": "This SDK version is no longer supported; update the app's VeraHub SDK."
+        }
+      },
+      "sold-out": {
+        "summary": "This coupon has no codes left.",
+        "value": {
+          "type": "/problems/sold-out",
+          "code": "sold-out",
+          "title": "Conflict",
+          "status": 409,
+          "detail": "This coupon has no codes left."
+        }
+      },
+      "temporarily-unavailable": {
+        "summary": "The code cannot be issued right now; try again shortly.",
+        "value": {
+          "type": "/problems/temporarily-unavailable",
+          "code": "temporarily-unavailable",
+          "title": "Service Unavailable",
+          "status": 503,
+          "detail": "The code cannot be issued right now; try again shortly."
+        }
+      },
+      "user-limit-reached": {
+        "summary": "The user has reached a limit for this benefit for now.",
+        "value": {
+          "type": "/problems/user-limit-reached",
+          "code": "user-limit-reached",
+          "title": "Conflict",
+          "status": 409,
+          "detail": "The user has reached a limit for this benefit for now.",
+          "nextRevealAt": "2026-11-24T00:00:00.000Z"
+        }
+      },
+      "user-mismatch": {
+        "summary": "The user token belongs to another user than VeraHub-Expected-User names.",
+        "value": {
+          "type": "/problems/user-mismatch",
+          "code": "user-mismatch",
+          "title": "Forbidden",
+          "status": 403,
+          "detail": "The user token belongs to another user than VeraHub-Expected-User names."
+        }
+      },
+      "user-not-found": {
+        "summary": "The user of this token does not exist.",
+        "value": {
+          "type": "/problems/user-not-found",
+          "code": "user-not-found",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "The user of this token does not exist."
+        }
+      },
+      "user-token-expired": {
+        "summary": "The user token has expired.",
+        "value": {
+          "type": "/problems/user-token-expired",
+          "code": "user-token-expired",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "The user token has expired."
+        }
+      },
+      "user-token-invalid": {
+        "summary": "A valid user token is required in the Authorization header: Bearer <token>.",
+        "value": {
+          "type": "/problems/user-token-invalid",
+          "code": "user-token-invalid",
+          "title": "Unauthorized",
+          "status": 401,
+          "detail": "A valid user token is required in the Authorization header: Bearer <token>."
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A publisher API key: `Authorization: Bearer <key>`."
+      },
+      "userToken": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A user token from `POST /v1/user-tokens`: `Authorization: Bearer <token>`. Only paths under `/v1/me` take it. It is checked before anything else the route checks or does, so `401` `user-token-expired` comes first: fetch a new token and retry once. Then come `sdk-unsupported`, `user-mismatch`, and `user-not-found`, in this order. Only a body the server cannot read at all is refused before the token, with no `code`: malformed JSON (`400`), an unsupported charset or content encoding (`415`), or a body too large (`413`)."
+      }
+    }
+  }
+}

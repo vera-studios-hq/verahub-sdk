@@ -1,0 +1,7 @@
+{
+  "type": "/problems/benefit-not-found",
+  "code": "benefit-not-found",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "No such benefit."
+}

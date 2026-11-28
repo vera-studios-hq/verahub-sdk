@@ -1,0 +1,7 @@
+{
+  "type": "/problems/user-token-invalid",
+  "code": "user-token-invalid",
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "A valid user token is required in the Authorization header: Bearer <token>."
+}

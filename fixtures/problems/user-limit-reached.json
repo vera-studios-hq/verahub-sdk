@@ -1,0 +1,8 @@
+{
+  "type": "/problems/user-limit-reached",
+  "code": "user-limit-reached",
+  "title": "Conflict",
+  "status": 409,
+  "detail": "The user has reached a limit for this benefit for now.",
+  "nextRevealAt": "2026-11-24T00:00:00.000Z"
+}
