@@ -30,7 +30,11 @@ public actor PagedList<Item: Sendable> {
     // The task applies the page itself, so a call waiting for it sees the new cursor.
     let task = Task { try await self.loadPage() }
     loading = task
-    return try await task.value
+    return try await withTaskCancellationHandler {
+      try await task.value
+    } onCancel: {
+      task.cancel()
+    }
   }
 
   private func loadPage() async throws -> [Item] {

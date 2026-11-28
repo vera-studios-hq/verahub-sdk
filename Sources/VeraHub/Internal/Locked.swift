@@ -1,7 +1,7 @@
 import Foundation
 
 /// A value behind a lock, for state that synchronous calls change.
-final class Locked<Value>: @unchecked Sendable {
+final class Locked<Value: Sendable>: @unchecked Sendable {
   private let lock = NSLock()
   private var value: Value
 

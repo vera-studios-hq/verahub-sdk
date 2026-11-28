@@ -86,7 +86,35 @@ final class Session: Sendable {
 
   /// The decoded answer, or the ``VeraHubError`` for a problem.
   func decode<Answer: Decodable>(_ type: Answer.Type, _ endpoint: Endpoint) async throws -> Answer {
-    let data = try await data(endpoint)
+    try decoded(Answer.self, from: try await data(endpoint), endpoint)
+  }
+
+  /// The decoded answer, or the problem the API answered with, for a call that handles some
+  /// problems itself; other failures throw a ``VeraHubError``.
+  func decodeOrProblem<Answer: Decodable>(_ type: Answer.Type, _ endpoint: Endpoint) async throws
+    -> Result<Answer, Problem>
+  {
+    do {
+      return .success(try decoded(Answer.self, from: try await dataOrProblem(endpoint), endpoint))
+    } catch let problem as Problem {
+      return .failure(problem)
+    }
+  }
+
+  /// The answer's body, or the ``VeraHubError`` for a problem.
+  func data(_ endpoint: Endpoint) async throws -> Data {
+    do {
+      return try await dataOrProblem(endpoint)
+    } catch let problem as Problem {
+      throw error(for: problem)
+    }
+  }
+
+  private func decoded<Answer: Decodable>(
+    _ type: Answer.Type, from data: Data, _ endpoint: Endpoint
+  )
+    throws -> Answer
+  {
     do {
       return try JSON.decoder.decode(Answer.self, from: data)
     } catch {
@@ -96,17 +124,8 @@ final class Session: Sendable {
     }
   }
 
-  /// The answer's body, or the ``VeraHubError`` for a problem.
-  func data(_ endpoint: Endpoint) async throws -> Data {
-    do {
-      return try await answer(endpoint)
-    } catch let problem as Problem {
-      throw error(for: problem)
-    }
-  }
-
   /// The answer's body; throws a ``Problem`` the API answered with, or a ``VeraHubError``.
-  func answer(_ endpoint: Endpoint) async throws -> Data {
+  private func dataOrProblem(_ endpoint: Endpoint) async throws -> Data {
     guard Self.isValidUserId(userId) else {
       throw VeraHubError(
         .misconfigured,

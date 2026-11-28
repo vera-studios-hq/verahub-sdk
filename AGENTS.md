@@ -50,9 +50,9 @@ What the SDKs are: [README.md](README.md). This file covers how they are built.
 
 ## Commands
 
-- `scripts/check`: the quality gate, as CI runs it (fixtures, `swift format lint --strict`, a
-  build with warnings as errors, the tests). Without Swift on `PATH` it runs in the official
-  Swift image with Podman or Docker. Run it before every commit.
+- `scripts/check`: the quality gate, as CI runs it (fixtures, shellcheck,
+  `swift format lint --strict`, a build with warnings as errors, the tests). Without Swift on
+  `PATH` it runs in the official Swift image with Podman or Docker. Run it before every commit.
 - `swift test --filter <Suite>/<test>`: one test.
 - Tests against a deployment: set `VERAHUB_API_URL` and `VERAHUB_API_KEY` (a publisher API key of
   a test app there) and run `swift test --filter VeraHubIntegrationTests`. CI runs them against

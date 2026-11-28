@@ -62,12 +62,3 @@ public final class VeraHubPreview: Sendable {
   /// The consent the client sent last, or `nil` before it sent one.
   public var sentConsent: Consent? { server.sentConsent }
 }
-
-extension VeraHubClient {
-  /// A client on sample data, from ``VeraHubPreview``.
-  public static func preview(
-    consent: Consent = Consent(analytics: true, personalisation: true)
-  ) -> VeraHubClient {
-    VeraHubPreview(consent: consent).client
-  }
-}

@@ -81,6 +81,8 @@ struct WireCategory: Decodable {
   let key: String
   let name: String
   let offerCount: Int
+
+  var model: Category { Category(key: key, name: name, offerCount: offerCount) }
 }
 
 struct WireCategoryList: Decodable {
@@ -89,6 +91,8 @@ struct WireCategoryList: Decodable {
 
 struct WireClickOut: Decodable {
   let url: URL
+
+  var model: ClickOut { ClickOut(url: url) }
 }
 
 struct WireBenefitForUser: Decodable {
@@ -114,7 +118,7 @@ struct WireOfferDetail: Decodable {
       benefits: user.benefits.filter { shown.contains($0.benefitId) }.map {
         BenefitForUser(
           benefitId: $0.benefitId, nextRevealAt: $0.nextRevealAt,
-          clickOut: $0.clickOut.map { ClickOut(url: $0.url) })
+          clickOut: $0.clickOut?.model)
       },
       holdings: user.holdings.compactMap(\.model))
   }
@@ -141,7 +145,7 @@ struct WireHolding: Decodable {
     guard BenefitKind.supported.contains(kind) else { return nil }
     return Holding(
       id: id, kind: kind, benefitId: benefitId, offerId: offerId, heldAt: heldAt,
-      expiresAt: expiresAt, isExpired: expired, clickOut: clickOut.map { ClickOut(url: $0.url) },
+      expiresAt: expiresAt, isExpired: expired, clickOut: clickOut?.model,
       coupon: coupon.map { HoldingCoupon(code: $0.code) })
   }
 }
@@ -184,8 +188,12 @@ struct WireRevealResult: Decodable {
   let holding: WireHolding
   let nextRevealAt: Date?
 
-  var model: RevealResult {
-    guard let holding = holding.model else { return .unavailable(.other) }
+  func model() throws -> RevealResult {
+    guard let holding = holding.model else {
+      throw VeraHubError(
+        .unexpected,
+        "VeraHub revealed a \(holding.kind) holding, which this SDK version cannot show.")
+    }
     switch outcome {
     case "already-held": return .alreadyHeld(holding, nextRevealAt: nextRevealAt)
     case "cooldown":
@@ -212,6 +220,21 @@ struct WireClientEvent: Encodable, Sendable {
   let name: String
   let occurredAt: Date
   let properties: [String: String]
+}
+
+extension RevealUnavailableReason {
+  /// The reason a reveal's problem stands for, or `nil` for a problem that is an error.
+  init?(_ problem: Problem) {
+    switch problem.code {
+    case "sold-out": self = .soldOut
+    case "quota-reached": self = .quotaReached
+    case "not-available": self = .notAvailable
+    case "user-limit-reached": self = .limitReached(until: problem.nextRevealAt)
+    default:
+      guard problem.status == 409 else { return nil }
+      self = .other
+    }
+  }
 }
 
 struct WireProblem: Decodable {

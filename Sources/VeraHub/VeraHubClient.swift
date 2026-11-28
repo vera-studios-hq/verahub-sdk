@@ -1,9 +1,5 @@
 import Foundation
 
-#if canImport(UIKit) && !os(watchOS)
-  import UIKit
-#endif
-
 /// The VeraHub client for one end user of your app.
 ///
 /// Create one when a user signs in and keep it while they stay signed in; when they sign out or
@@ -27,7 +23,7 @@ public final class VeraHubClient: Sendable {
   private let session: Session
   private let views: ViewTracker
   private let pipeline: EventPipeline
-  private let observer: Locked<(any NSObjectProtocol)?> = Locked(nil)
+  private let observer: Locked<Observer?> = Locked(nil)
 
   /// Creates a client for one end user.
   ///
@@ -84,7 +80,7 @@ public final class VeraHubClient: Sendable {
 
   deinit {
     if let observer = observer.withLock({ $0 }) {
-      NotificationCenter.default.removeObserver(observer)
+      NotificationCenter.default.removeObserver(observer.token)
     }
     views.end()
     Task { [pipeline] in await pipeline.end() }
@@ -116,7 +112,7 @@ public final class VeraHubClient: Sendable {
   public func categories() async throws -> [Category] {
     try await session.decode(
       WireCategoryList.self, .get("categories", query: Endpoint.benefitKinds)
-    ).items.map { Category(key: $0.key, name: $0.name, offerCount: $0.offerCount) }
+    ).items.map(\.model)
   }
 
   /// The detail of an offer from a list, with what belongs to the user.
@@ -146,24 +142,16 @@ public final class VeraHubClient: Sendable {
   /// Reveals a coupon by its benefit's id, such as a holding's ``Holding/benefitId`` after a
   /// cooldown.
   public func reveal(benefitId: String) async throws -> RevealResult {
-    do {
-      let data = try await session.answer(.post("benefits", benefitId, "reveal"))
-      do {
-        return try JSON.decoder.decode(WireRevealResult.self, from: data).model
-      } catch {
-        throw VeraHubError(
-          .unexpected, "VeraHub's answer does not match what this SDK version expects: \(error).")
-      }
-    } catch let problem as Problem {
-      switch problem.code {
-      case "sold-out": return .unavailable(.soldOut)
-      case "quota-reached": return .unavailable(.quotaReached)
-      case "not-available": return .unavailable(.notAvailable)
-      case "user-limit-reached": return .unavailable(.limitReached(until: problem.nextRevealAt))
-      default:
-        if problem.status == 409 { return .unavailable(.other) }
+    switch try await session.decodeOrProblem(
+      WireRevealResult.self, .post("benefits", benefitId, "reveal"))
+    {
+    case .success(let answer):
+      return try answer.model()
+    case .failure(let problem):
+      guard let reason = RevealUnavailableReason(problem) else {
         throw session.error(for: problem)
       }
+      return .unavailable(reason)
     }
   }
 
@@ -214,15 +202,23 @@ public final class VeraHubClient: Sendable {
     session.markEnded()
   }
 
+  /// Sends the queue when the app goes to the background. By the notification's name, so the
+  /// SDK needs no UIKit and no main actor for it.
   private func observeBackground() {
-    #if canImport(UIKit) && !os(watchOS)
+    #if os(iOS) || os(tvOS) || os(visionOS)
       let pipeline = pipeline
       let token = NotificationCenter.default.addObserver(
-        forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil
+        forName: Notification.Name("UIApplicationDidEnterBackgroundNotification"), object: nil,
+        queue: nil
       ) { _ in
         Task { await pipeline.flush() }
       }
-      observer.withLock { $0 = token }
+      observer.withLock { $0 = Observer(token: token) }
     #endif
   }
+}
+
+/// A notification observer's token, which `NotificationCenter` uses from any thread.
+private struct Observer: @unchecked Sendable {
+  let token: any NSObjectProtocol
 }
