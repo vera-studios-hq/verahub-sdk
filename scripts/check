@@ -27,7 +27,7 @@ swift_run() {
 }
 
 scripts/fixtures --check
-if command -v shellcheck >/dev/null; then
+if shellcheck --version >/dev/null 2>&1; then
   shellcheck scripts/*
 else
   echo "shellcheck is not installed; CI runs it on scripts/." >&2
