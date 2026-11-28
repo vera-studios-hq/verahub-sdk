@@ -113,7 +113,7 @@ public final class VeraHubClient: Sendable {
   }
 
   /// Every category, in VeraHub's order, each with the number of offers listed in it.
-  public func categories() async throws -> [Category] {
+  public func categories() async throws -> [CategorySummary] {
     try await session.decode(
       WireCategoryList.self, .get("categories", query: Endpoint.benefitKinds)
     ).items.readable("the categories", log: session.log).map(\.model)

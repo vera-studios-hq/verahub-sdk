@@ -63,7 +63,8 @@ import Testing
     api.on("GET", "/v1/me/categories", .ok("responses/listCategories.200"))
     let categories = try await makeClient(api).categories()
     #expect(
-      categories.first == Category(key: "fashion", name: "Mode & Accessoires", offerCount: 12))
+      categories.first
+        == CategorySummary(key: "fashion", name: "Mode & Accessoires", offerCount: 12))
     #expect(
       categories.count
         == (json(fixture("responses/listCategories.200")) as! [String: [Any]])["items"]!.count)

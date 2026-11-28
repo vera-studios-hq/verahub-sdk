@@ -119,7 +119,7 @@ struct WireCategory: Decodable {
   let name: String
   let offerCount: Int
 
-  var model: Category { Category(key: key, name: name, offerCount: offerCount) }
+  var model: CategorySummary { CategorySummary(key: key, name: name, offerCount: offerCount) }
 }
 
 struct WireCategoryList: Decodable {

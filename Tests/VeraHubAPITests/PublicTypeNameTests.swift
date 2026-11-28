@@ -1,6 +1,7 @@
 // An app's view of the SDK: no `@testable`, Foundation (and SwiftUI where it exists) imported
 // next to it, and every public type named in type position, where a clash with a type of the
-// same name in those modules (Objective-C's `Category`, SwiftUI's `Image`) would be ambiguous.
+// same name in those modules (Objective-C's `Category`, which is why the SDK's type is
+// `CategorySummary`, and SwiftUI's `Image`) would be ambiguous.
 import Foundation
 import Testing
 import VeraHub
@@ -11,7 +12,7 @@ import VeraHub
 
 @Suite struct PublicTypeNameTests {
   @Test func everyPublicTypeCanBeNamedInAnApp() {
-    let categories: [Category] = []
+    let categories: [CategorySummary] = []
     let offers: [Offer] = []
     let images: [RemoteImage] = []
     let brands: [Brand] = []

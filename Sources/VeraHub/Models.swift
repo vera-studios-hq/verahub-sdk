@@ -65,7 +65,7 @@ public struct OfferCategory: Sendable, Hashable {
 }
 
 /// A category with the number of offers listed in it, from ``VeraHubClient/categories()``.
-public struct Category: Sendable, Hashable, Identifiable {
+public struct CategorySummary: Sendable, Hashable, Identifiable {
   /// A stable key such as `sports-outdoors`; pass it to ``VeraHubClient/offers(category:)``.
   public let key: String
   /// The German name, which can change.
