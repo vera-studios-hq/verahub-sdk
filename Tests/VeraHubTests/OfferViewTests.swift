@@ -176,7 +176,7 @@ struct ViewHarness {
 
     let attempts = api.received("POST", "/v1/me/events")
     // Three sends of the batch, each retried by the session three times.
-    #expect(attempts.count == EventPipeline.attempts * Session.attempts)
+    #expect(attempts.count == 9)
     let stamps = attempts.map { $0.bodyJSON["sentAt"] as! String }
     #expect(Set(stamps).count == stamps.count)
   }
@@ -330,9 +330,9 @@ extension ViewHarness {
 
     // Each round is three attempts of the session; the second round waits 10 seconds, not 5.
     await harness.pass(16)
-    #expect(api.received("PUT", "/v1/me/consent").count == 2 * Session.attempts)
+    #expect(api.received("PUT", "/v1/me/consent").count == 6)
     await harness.pass(10)
-    #expect(api.received("PUT", "/v1/me/consent").count == 3 * Session.attempts)
+    #expect(api.received("PUT", "/v1/me/consent").count == 9)
   }
 
   @Test func aTokenVeraHubRefusesIsAskedForAgainAfterGrowingPauses() async throws {
