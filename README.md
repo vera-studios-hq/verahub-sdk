@@ -88,8 +88,8 @@ let client = VeraHubClient(
   signs in, call `client.signOut()` and create a new client.
 - The client asks your callback for a token when it starts (it sends the consent then), when
   VeraHub says the token expired, and again, with growing pauses for its own background sends,
-  after VeraHub refused a token or the callback threw. Every request names the `userId`, and VeraHub refuses a token of
-  another user, so one user never sees another's codes.
+  after VeraHub refused a token or the callback threw. Every request names the `userId`, and
+  VeraHub refuses a token of another user, so one user never sees another's codes.
 - Pass consent changes with `client.updateConsent(_:)`. Without analytics consent, no offer view
   leaves the device; a send under way stops at its next attempt when the consent is withdrawn or
   the user signs out.
