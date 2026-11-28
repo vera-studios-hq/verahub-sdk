@@ -37,6 +37,20 @@ jobs:
             echo "Built against the publisher spec of VeraHub \`$commit\` (\`spec/publisher.json\`)."
           } >notes.md
           cat notes.md
+      - name: Check that this is main and the tag is new
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == "refs/heads/main" ]] ||
+            { echo "::error::Releases are made from main, not $GITHUB_REF"; exit 1; }
+          status=0
+          git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null || status=$?
+          case "$status" in
+            2) ;;
+            0) echo "::error::The tag $VERSION already exists"; exit 1 ;;
+            *) echo "::error::Cannot check whether the tag $VERSION exists"; exit 1 ;;
+          esac
       - name: Check that CI passed on this commit
         env:
           GH_TOKEN: ${{ github.token }}

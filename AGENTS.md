@@ -46,6 +46,11 @@ What the SDKs are: [README.md](README.md). This file covers how they are built.
   analytics consent and after the consent was sent; `sentAt` is stamped at each attempt. The
   queue is in memory, sent every 5 seconds, at 20 events, and when the app goes to the
   background; an event is dropped after 3 failed sends.
+- Background sends (consent, events) recheck before every attempt, and abandon it when the client
+  signed out, the analytics consent is withdrawn (events), or a newer consent exists (consent).
+  After a transient failure or a refused token they pause for 5 seconds, doubling to 5 minutes
+  (at least the `Retry-After`) until a send succeeds or the consent changes; after a permanent
+  refusal (other 4xx) they stop, and drop the queue, until the consent changes.
 - Logs are off by default and never contain a token or a code.
 
 ## Commands
@@ -69,5 +74,6 @@ What the SDKs are: [README.md](README.md). This file covers how they are built.
   `js-1.4.2`). Swift Package Manager ignores tags that are not semantic versions: checked with
   Swift 6.4.2 on Linux, and by CI with Xcode on every run.
 - A Swift release: set `VeraHubClient.sdkVersion`, add the version's section to `CHANGELOG.md`,
-  merge, then run the Release workflow with the version. It checks both and that CI passed on the
-  commit, tags it, and publishes the release with notes naming the spec's commit.
+  merge, then run the Release workflow on `main` with the version. It checks both, that the tag
+  is new, and that CI passed on the commit, tags it, and publishes the release with notes naming
+  the spec's commit.

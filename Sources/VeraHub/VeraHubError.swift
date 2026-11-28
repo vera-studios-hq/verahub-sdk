@@ -4,7 +4,9 @@ import Foundation
 /// ``message``, which is for developers.
 ///
 /// A reveal that does not give the user a holding is not an error: it is a ``RevealResult``.
-/// An error thrown by your token callback is rethrown unchanged.
+/// An error thrown by your token callback is rethrown unchanged by the call that needed the token;
+/// the client calls the callback again for a later call, and, after growing pauses, for its own
+/// background sends.
 public struct VeraHubError: Error, Sendable, CustomStringConvertible {
   /// What went wrong, as a value to branch on. New kinds can be added in a minor version.
   public struct Kind: Sendable, Hashable, CustomStringConvertible {

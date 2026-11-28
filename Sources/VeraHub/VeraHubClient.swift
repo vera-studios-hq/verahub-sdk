@@ -33,9 +33,10 @@ public final class VeraHubClient: Sendable {
   ///     1 to 128 letters, digits, `.`, `_`, `~`, or `-`, starting with a letter or digit.
   ///   - consent: The consent the user has given. Pass changes to ``updateConsent(_:)``.
   ///   - logLevel: How much the SDK writes to the system log; off by default.
-  ///   - token: Returns a user token for `userId` from your backend. The client calls it for its
-  ///     first request and again only when VeraHub says the token expired. An error it throws is
-  ///     rethrown by the call that needed the token.
+  ///   - token: Returns a user token for `userId` from your backend. The client calls it when it
+  ///     starts, because it then sends the consent; when VeraHub says the token expired; and
+  ///     again, after growing pauses for its own background sends, after VeraHub refused a token
+  ///     or the callback threw. An error it throws is rethrown by the call that needed the token.
   public convenience init(
     environment: VeraHubEnvironment, userId: String, consent: Consent,
     logLevel: VeraHubLogLevel = .off,
@@ -82,6 +83,7 @@ public final class VeraHubClient: Sendable {
     if let observer = observer.withLock({ $0 }) {
       NotificationCenter.default.removeObserver(observer.token)
     }
+    session.markEnded()
     views.end()
     Task { [pipeline] in await pipeline.end() }
   }
@@ -92,9 +94,8 @@ public final class VeraHubClient: Sendable {
   ///
   /// - Parameter category: Only offers in this category, by its key; `nil` for all.
   public func offers(category: String? = nil) -> PagedList<Offer> {
-    let session = session
     let feed = Locked<String?>(nil)
-    return PagedList { cursor in
+    return PagedList { [self] cursor in
       var query = Endpoint.benefitKinds
       if let category { query.append(URLQueryItem(name: "category", value: category)) }
       if let cursor { query.append(URLQueryItem(name: "cursor", value: cursor)) }
@@ -157,8 +158,7 @@ public final class VeraHubClient: Sendable {
 
   /// What the user holds, newest first.
   public func holdings() -> PagedList<HoldingEntry> {
-    let session = session
-    return PagedList { cursor in
+    PagedList { [self] cursor in
       var query = Endpoint.benefitKinds
       if let cursor { query.append(URLQueryItem(name: "cursor", value: cursor)) }
       let page = try await session.decode(WireHoldingList.self, .get("holdings", query: query))

@@ -86,11 +86,13 @@ let client = VeraHubClient(
 
 - Create one client per signed-in user and keep it. When the user signs out or another user
   signs in, call `client.signOut()` and create a new client.
-- The client asks your callback for a token on its first request, and again only when VeraHub
-  says the token expired. Every request names the `userId`, and VeraHub refuses a token of
+- The client asks your callback for a token when it starts (it sends the consent then), when
+  VeraHub says the token expired, and again, with growing pauses for its own background sends,
+  after VeraHub refused a token or the callback threw. Every request names the `userId`, and VeraHub refuses a token of
   another user, so one user never sees another's codes.
 - Pass consent changes with `client.updateConsent(_:)`. Without analytics consent, no offer view
-  leaves the device.
+  leaves the device; a send under way stops at its next attempt when the consent is withdrawn or
+  the user signs out.
 - Use `.sandbox` while you build and test, `.production` in the app you release; the tokens must
   come from the same environment.
 
@@ -109,7 +111,9 @@ let detail = try await client.offerDetail(for: offer)    // also offerDetail(off
 
 Report each offer of a list with `offerBecameVisible(_:)` and `offerBecameHidden(_:)`. An offer
 visible for one second counts as one view, once per feed load; the SDK keeps the timer, sends the
-views in batches, and drops them when the user has not given analytics consent.
+views in batches, and drops them when the user has not given analytics consent. When VeraHub or
+the connection fails, it sends again after pauses growing from 5 seconds to 5 minutes; when VeraHub
+refuses the consent or the views for good, it stops sending until the consent changes.
 
 ### Reveal a coupon
 

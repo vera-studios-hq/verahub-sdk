@@ -96,6 +96,11 @@ final class ViewTracker: Sendable {
 /// change; events leave the device only with analytics consent, and only after the consent was
 /// sent. The queue is in memory: it is sent every few seconds, when it is full, and when the app
 /// goes to the background, and a batch that failed a few times is dropped.
+///
+/// A send VeraHub or the connection cannot take now, or that the token callback or VeraHub's
+/// refusal of the token stopped, pauses every send for a growing time. A send VeraHub refuses
+/// for good, such as an invalid request, stops the client's own sends, and drops the queue,
+/// until the consent changes.
 actor EventPipeline {
   /// Seconds between sends.
   static let interval = 5.0
@@ -107,10 +112,22 @@ actor EventPipeline {
   static let capacity = 500
   /// Failed sends after which an event is dropped.
   static let attempts = 3
+  /// The pause after a first failed send, in seconds; each next one doubles it.
+  static let firstPause = 5.0
+  /// The longest pause, in seconds.
+  static let longestPause = 300.0
 
   private struct Queued {
     let event: WireClientEvent
     var failures = 0
+  }
+
+  private enum Outcome {
+    /// Not a failure: the send no longer applied, or the client ended.
+    case ignore
+    /// A pause, at least `retryAfter` seconds.
+    case pause(retryAfter: Double?)
+    case stop
   }
 
   private let session: Session
@@ -122,6 +139,11 @@ actor EventPipeline {
   private var flushAgain = false
   private var ended = false
   private var loop: Task<Void, Never>?
+  private var failedSends = 0
+  private var pausedUntil: Date?
+  private var stopped = false
+  /// The consent number the pause or stop belongs to; a newer consent lifts both.
+  private var pausedVersion = 0
 
   init(session: Session, consent: Consent) {
     self.session = session
@@ -153,7 +175,7 @@ actor EventPipeline {
   }
 
   func enqueue(_ event: WireClientEvent) {
-    guard consent.withLock({ $0.value.analytics }), !ended else { return }
+    guard consent.withLock({ $0.value.analytics }), !ended, !stopped else { return }
     queue.append(Queued(event: event))
     if queue.count > Self.capacity {
       session.log.error("The event queue is full; dropping the oldest offer view.")
@@ -169,7 +191,8 @@ actor EventPipeline {
     loop = nil
   }
 
-  /// Sends the consent if it has not been sent, then the queue in batches.
+  /// Sends the consent if it has not been sent, then the queue in batches; does nothing while
+  /// sends are paused or stopped.
   func flush() async {
     guard !ended else { return }
     guard !flushing else {
@@ -180,8 +203,22 @@ actor EventPipeline {
     defer { flushing = false }
     repeat {
       flushAgain = false
+      guard mayFlush() else { return }
       await flushOnce()
     } while flushAgain && !ended
+  }
+
+  private func mayFlush() -> Bool {
+    let version = consent.withLock { $0.version }
+    if version != pausedVersion {
+      pausedVersion = version
+      failedSends = 0
+      pausedUntil = nil
+      stopped = false
+    }
+    if stopped { return false }
+    if let pausedUntil, session.clock.now() < pausedUntil { return false }
+    return true
   }
 
   private func flushOnce() async {
@@ -191,10 +228,25 @@ actor EventPipeline {
       do {
         let body = WireConsent(
           analytics: current.analytics, personalisation: current.personalisation)
-        _ = try await session.data(.send("PUT", "consent") { body })
+        // A newer consent replaces this one, and is sent next.
+        _ = try await session.dataOrProblem(
+          .send("PUT", "consent") { body }
+            .only { [consent] in consent.withLock { $0.version } == version })
         sentVersion = version
+        succeeded()
       } catch {
-        session.log.error("Sending the consent failed; it is sent again shortly: \(error)")
+        switch Self.outcome(of: error) {
+        case .ignore:
+          break
+        case .pause(let retryAfter):
+          session.log.error("Sending the consent failed; it is sent again later: \(error)")
+          pause(retryAfter: retryAfter)
+        case .stop:
+          session.log.error(
+            "VeraHub refused the consent; it is sent again when it changes: \(error)"
+          )
+          stop()
+        }
         return
       }
     }
@@ -206,25 +258,77 @@ actor EventPipeline {
       let ids = Set(batch.map(\.id))
       do {
         // `sentAt` is stamped at each attempt, so the server can correct the device's clock.
-        _ = try await session.data(
+        _ = try await session.dataOrProblem(
           .send("POST", "events") { [clock = session.clock] in
             WireSendEvents(sentAt: clock.now(), events: batch)
-          })
+          }
+          .only { [consent] in consent.withLock { $0.value.analytics } })
         queue.removeAll { ids.contains($0.event.id) }
+        succeeded()
       } catch {
-        let before = queue.count
-        queue = queue.compactMap { queued in
-          guard ids.contains(queued.event.id) else { return queued }
-          var queued = queued
-          queued.failures += 1
-          return queued.failures < Self.attempts ? queued : nil
+        switch Self.outcome(of: error) {
+        case .ignore:
+          if !consent.withLock({ $0.value.analytics }) { queue.removeAll() }
+          return
+        case .pause(let retryAfter):
+          let before = queue.count
+          queue = queue.compactMap { queued in
+            guard ids.contains(queued.event.id) else { return queued }
+            var queued = queued
+            queued.failures += 1
+            return queued.failures < Self.attempts ? queued : nil
+          }
+          let dropped = before - queue.count
+          session.log.error(
+            "Sending \(batch.count) offer views failed\(dropped > 0 ? "; dropped \(dropped)" : ""): \(error)"
+          )
+          pause(retryAfter: retryAfter)
+        case .stop:
+          session.log.error(
+            "VeraHub refused \(batch.count) offer views; no more are sent: \(error)")
+          stop()
         }
-        let dropped = before - queue.count
-        session.log.error(
-          "Sending \(batch.count) offer views failed\(dropped > 0 ? "; dropped \(dropped)" : ""): \(error)"
-        )
         return
       }
     }
+  }
+
+  private func succeeded() {
+    failedSends = 0
+    pausedUntil = nil
+  }
+
+  private func pause(retryAfter: Double?) {
+    failedSends += 1
+    let growing = min(Self.firstPause * pow(2, Double(failedSends - 1)), Self.longestPause)
+    pausedUntil = session.clock.now().addingTimeInterval(max(growing, retryAfter ?? 0))
+  }
+
+  private func stop() {
+    stopped = true
+    queue.removeAll()
+  }
+
+  /// What a failed send means for the next ones.
+  private static func outcome(of error: any Error) -> Outcome {
+    if error is CancellationError || error is Abandoned { return .ignore }
+    if let problem = error as? Problem {
+      let refusedToken = ["user-mismatch", "user-token-invalid", "user-token-expired"]
+      if problem.status == 429 || problem.status >= 500
+        || refusedToken.contains(problem.code ?? "")
+      {
+        return .pause(retryAfter: problem.retryAfter)
+      }
+      return .stop
+    }
+    if let error = error as? VeraHubError {
+      if error.kind == .signedOut { return .ignore }
+      if error.kind == .noConnection || (error.kind == .unexpected && error.status == nil) {
+        return .pause(retryAfter: nil)
+      }
+      return .stop
+    }
+    // The token callback's own error.
+    return .pause(retryAfter: nil)
   }
 }

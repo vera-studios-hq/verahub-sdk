@@ -11,6 +11,8 @@ struct Endpoint: Sendable {
   var query: [URLQueryItem] = []
   /// The JSON body, written anew for each attempt, so a time in it is the attempt's.
   var body: (@Sendable () throws -> Data)?
+  /// Asked before each attempt; when it says no, the request is abandoned with ``Abandoned``.
+  var precondition: (@Sendable () -> Bool)?
 
   static func get(_ path: String..., query: [URLQueryItem] = []) -> Endpoint {
     Endpoint(method: "GET", path: path, query: query)
@@ -26,11 +28,22 @@ struct Endpoint: Sendable {
     Endpoint(method: "POST", path: path)
   }
 
+  /// This request, sent only while `condition` holds at each attempt.
+  func only(if condition: @escaping @Sendable () -> Bool) -> Endpoint {
+    var endpoint = self
+    endpoint.precondition = condition
+    return endpoint
+  }
+
   /// The benefit kinds this SDK version can show; every request that returns benefits names them.
   static var benefitKinds: [URLQueryItem] {
     BenefitKind.supported.map { URLQueryItem(name: "benefitKinds", value: $0.rawValue) }
   }
 }
+
+/// Thrown when a request is not sent, or not sent again, because its precondition no longer holds
+/// or the client was signed out. It is neither a failure nor a problem of the API.
+struct Abandoned: Error {}
 
 /// A problem the API answered with, after the session's retries.
 struct Problem: Error, Sendable {
@@ -124,8 +137,9 @@ final class Session: Sendable {
     }
   }
 
-  /// The answer's body; throws a ``Problem`` the API answered with, or a ``VeraHubError``.
-  private func dataOrProblem(_ endpoint: Endpoint) async throws -> Data {
+  /// The answer's body; throws a ``Problem`` the API answered with, a ``VeraHubError``, or
+  /// ``Abandoned``.
+  func dataOrProblem(_ endpoint: Endpoint) async throws -> Data {
     guard Self.isValidUserId(userId) else {
       throw VeraHubError(
         .misconfigured,
@@ -171,6 +185,10 @@ final class Session: Sendable {
 
     var attempt = 1
     while true {
+      guard !isEnded, endpoint.precondition?() ?? true else {
+        log.debug("\(name): not sent; it no longer applies.")
+        return .failure(Abandoned())
+      }
       let wait: Double
       do {
         request.httpBody = try endpoint.body?()
