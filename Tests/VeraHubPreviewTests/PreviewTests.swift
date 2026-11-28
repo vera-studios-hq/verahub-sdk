@@ -75,11 +75,21 @@ private final class RunawayClock: SDKClock, @unchecked Sendable {
   private let lock = NSLock()
   private var offset = 0.0
 
-  func now() -> Date { Date(timeIntervalSinceNow: lock.withLock { offset }) }
+  func now() -> Date {
+    lock.lock()
+    defer { lock.unlock() }
+    return Date(timeIntervalSinceNow: offset)
+  }
+
+  private func advance(by seconds: Double) {
+    lock.lock()
+    defer { lock.unlock() }
+    offset += seconds
+  }
 
   func sleep(seconds: Double) async throws {
     try Task.checkCancellation()
-    lock.withLock { offset += max(0, seconds) }
+    advance(by: max(0, seconds))
     try await Task.sleep(nanoseconds: 1_000_000)
   }
 }
