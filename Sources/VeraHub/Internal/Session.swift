@@ -285,14 +285,9 @@ final class Session: Sendable {
       retryAfter: response.value(forHTTPHeaderField: "Retry-After").flatMap(retryAfter))
   }
 
-  /// `Retry-After` in seconds, from either of its forms.
+  /// `Retry-After` in seconds; any other form is ignored.
   private static func retryAfter(_ value: String) -> Double? {
-    if let seconds = Double(value.trimmingCharacters(in: .whitespaces)) { return max(0, seconds) }
-    let format = DateFormatter()
-    format.locale = Locale(identifier: "en_US_POSIX")
-    format.timeZone = TimeZone(identifier: "GMT")
-    format.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
-    return format.date(from: value).map { max(0, $0.timeIntervalSinceNow) }
+    Double(value.trimmingCharacters(in: .whitespaces)).map { max(0, $0) }
   }
 
   private static func connectionError(_ error: any Error) -> VeraHubError {
