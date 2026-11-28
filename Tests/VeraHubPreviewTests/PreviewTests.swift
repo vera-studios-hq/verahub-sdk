@@ -57,14 +57,29 @@ import VeraHubPreview
     }
   }
 
-  @Test func recordsTheViewsAndTheConsentTheClientSends() async throws {
+  @Test func recordsTheViewsTheClientSends() async throws {
     let preview = VeraHubPreview(
-      consent: Consent(analytics: true, personalisation: false), latency: 0)
+      userId: "preview-user", consent: Consent(analytics: true, personalisation: false),
+      reveal: .succeed, latency: 0, clock: RunawayClock())
     let offer = try #require(try await preview.client.offers().loadNext().first)
     preview.client.offerBecameVisible(offer)
-    // The preview runs on the real clock: one second visible, then the next send.
-    try await Task.sleep(nanoseconds: 6_500_000_000)
+    for _ in 0..<500 where preview.sentViews.isEmpty {
+      try await Task.sleep(nanoseconds: 10_000_000)
+    }
     #expect(preview.sentViews.map(\.offerId) == [offer.id])
-    #expect(preview.sentConsent == Consent(analytics: true, personalisation: false))
+  }
+}
+
+/// A clock whose waits take no real time: each one moves its time on by the wait.
+private final class RunawayClock: SDKClock, @unchecked Sendable {
+  private let lock = NSLock()
+  private var offset = 0.0
+
+  func now() -> Date { Date(timeIntervalSinceNow: lock.withLock { offset }) }
+
+  func sleep(seconds: Double) async throws {
+    try Task.checkCancellation()
+    lock.withLock { offset += max(0, seconds) }
+    try await Task.sleep(nanoseconds: 1_000_000)
   }
 }

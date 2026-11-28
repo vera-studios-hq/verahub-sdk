@@ -44,21 +44,30 @@ public final class VeraHubPreview: Sendable {
   ///   - consent: The consent the user has given.
   ///   - reveal: What a reveal answers.
   ///   - latency: Seconds each answer takes, to show your loading states.
-  public init(
+  public convenience init(
     userId: String = "preview-user",
     consent: Consent = Consent(analytics: true, personalisation: true),
     reveal: RevealBehaviour = .succeed,
     latency: Double = 0.3
   ) {
+    self.init(
+      userId: userId, consent: consent, reveal: reveal, latency: latency, clock: nil)
+  }
+
+  package init(
+    userId: String, consent: Consent, reveal: RevealBehaviour, latency: Double,
+    clock: (any SDKClock)?
+  ) {
     let server = PreviewServer(reveal: reveal, latency: latency)
     self.server = server
     client = VeraHubClient(
-      userId: userId, consent: consent, token: { _ in "preview-token" }, transport: server)
+      userId: userId, consent: consent, token: { _ in "preview-token" }, transport: server,
+      clock: clock)
   }
 
   /// The offer views the client has sent so far: offers your app reported visible for a second.
+  ///
+  /// A view appears only after the one-second timer and the client's next send, up to about six
+  /// seconds after the offer became visible.
   public var sentViews: [SentView] { server.sentViews }
-
-  /// The consent the client sent last, or `nil` before it sent one.
-  public var sentConsent: Consent? { server.sentConsent }
 }

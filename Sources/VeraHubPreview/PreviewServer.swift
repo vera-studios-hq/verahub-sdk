@@ -16,7 +16,6 @@ final class PreviewServer: Transport, @unchecked Sendable {
   /// The user's holding entries, newest first, as the holdings list carries them.
   private var holdings: [Object]
   private var views: [VeraHubPreview.SentView] = []
-  private var consent: Consent?
 
   init(reveal: VeraHubPreview.RevealBehaviour, latency: Double) {
     self.reveal = reveal
@@ -27,7 +26,6 @@ final class PreviewServer: Transport, @unchecked Sendable {
   }
 
   var sentViews: [VeraHubPreview.SentView] { lock.locked { views } }
-  var sentConsent: Consent? { lock.locked { consent } }
 
   func send(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
     if latency > 0 { try await Task.sleep(nanoseconds: UInt64(latency * 1_000_000_000)) }
@@ -98,7 +96,6 @@ final class PreviewServer: Transport, @unchecked Sendable {
       guard let analytics = body?["analytics"] as? Bool,
         let personalisation = body?["personalisation"] as? Bool
       else { return Self.problem("request-invalid") }
-      consent = Consent(analytics: analytics, personalisation: personalisation)
       return (
         200,
         [
