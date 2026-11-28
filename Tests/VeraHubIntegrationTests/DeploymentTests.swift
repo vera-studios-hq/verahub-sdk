@@ -124,6 +124,7 @@ func whereBuilt(_ route: String, _ body: () async throws -> Void) async throws {
       let error = await veraHubError {
         try await client.holdings().loadNext()
       }
+      if let error, error.status == 501 { throw error }
       #expect(error?.kind == .userMismatch)
     }
   }
