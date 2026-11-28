@@ -20,6 +20,8 @@ func json(_ data: Data) -> Any { try! JSONSerialization.jsonObject(with: data) }
 struct Received: Sendable {
   let method: String
   let path: String
+  /// The path as sent, percent-encoding included.
+  let rawPath: String
   let query: [String: [String]]
   let headers: Headers
   let body: Data?
@@ -106,7 +108,8 @@ final class FakeAPI: Transport, @unchecked Sendable {
       query[item.name, default: []].append(item.value ?? "")
     }
     let received = Received(
-      method: request.httpMethod ?? "GET", path: components.path, query: query,
+      method: request.httpMethod ?? "GET", path: components.path,
+      rawPath: components.percentEncodedPath, query: query,
       headers: Headers(request.allHTTPHeaderFields ?? [:]), body: request.httpBody)
     let handler = lock.locked {
       _received.append(received)

@@ -45,7 +45,12 @@ What the SDKs are: [README.md](README.md). This file covers how they are built.
 - Offer views: one second at least half visible, once per feed load and offer, only with
   analytics consent and after the consent was sent; `sentAt` is stamped at each attempt. The
   queue is in memory, sent every 5 seconds, at 20 events, and when the app goes to the
-  background; an event is dropped after 3 failed sends.
+  background; an event is dropped after 3 failed sends. Views queued before analytics consent
+  was withdrawn never leave, also when it is given again, and views of a feed load more than 23
+  hours old are not counted or sent (the API takes them for 24 hours).
+- Ids from outside (an offer id from a deep link) are one encoded path segment; an id no offer can
+  have is `offerNotFound` without a request. One list item the SDK cannot read is skipped and
+  logged, not a failed page.
 - Background sends (consent, events) recheck before every attempt, and abandon it when the client
   signed out, the analytics consent is withdrawn (events), or a newer consent exists (consent).
   After a transient failure or a refused token they pause for 5 seconds, doubling to 5 minutes
@@ -59,6 +64,8 @@ What the SDKs are: [README.md](README.md). This file covers how they are built.
   `swift format lint --strict`, a build with warnings as errors, the tests). Without Swift on
   `PATH` it runs in the official Swift image with Podman or Docker. Run it before every commit.
 - `swift test --filter <Suite>/<test>`: one test.
+- Untested: CI runs the tests on Linux and macOS 15 only, so the iOS 15 to 17 Foundation (date
+  parsing, `URL` strictness) is compiled for but never executed.
 - Tests against a deployment: set `VERAHUB_API_URL` and `VERAHUB_API_KEY` (a publisher API key of
   a test app there) and run `swift test --filter VeraHubIntegrationTests`. CI runs them against
   the development deployment, whose seeded test app's key is public on purpose, and against the

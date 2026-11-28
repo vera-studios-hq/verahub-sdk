@@ -11,21 +11,24 @@ final class ViewTracker: Sendable {
   private struct State {
     var analytics: Bool
     var ended = false
-    var visible: [Key: (id: UUID, timer: Task<Void, Never>)] = [:]
+    var visible: [Key: (id: UUID, feed: FeedLoad, timer: Task<Void, Never>)] = [:]
     var viewed: Set<Key> = []
   }
 
   /// How long an offer must stay visible to count as viewed.
   static let viewDuration = 1.0
+  /// How long after a feed load its views are counted. The API takes views up to 24 hours after
+  /// the load, counted from its own clock; the margin covers that and time in the queue.
+  static let feedLifetime = 23 * 3600.0
 
   private let state: Locked<State>
   private let clock: any SDKClock
   private let log: Log
-  private let viewed: @Sendable (WireClientEvent) -> Void
+  private let viewed: @Sendable (WireClientEvent, FeedLoad) -> Void
 
   init(
     analytics: Bool, clock: any SDKClock, log: Log,
-    viewed: @escaping @Sendable (WireClientEvent) -> Void
+    viewed: @escaping @Sendable (WireClientEvent, FeedLoad) -> Void
   ) {
     state = Locked(State(analytics: analytics))
     self.clock = clock
@@ -34,11 +37,15 @@ final class ViewTracker: Sendable {
   }
 
   func becameVisible(_ offer: Offer) {
-    guard let feedId = offer.feedId else {
+    guard let feed = offer.feed else {
       log.debug("Offer \(offer.id) was not loaded from a list; its visibility is not counted.")
       return
     }
-    let key = Key(feedId: feedId, offerId: offer.id)
+    guard !feed.isExpired(at: clock.now()) else {
+      log.debug("Offer \(offer.id) is from a feed load over a day old; load the list again.")
+      return
+    }
+    let key = Key(feedId: feed.id, offerId: offer.id)
     state.withLock { state in
       guard state.analytics, !state.ended, !state.viewed.contains(key), state.visible[key] == nil
       else { return }
@@ -47,7 +54,7 @@ final class ViewTracker: Sendable {
         guard (try? await clock.sleep(seconds: Self.viewDuration)) != nil else { return }
         self?.elapsed(key, id: id)
       }
-      state.visible[key] = (id, timer)
+      state.visible[key] = (id, feed, timer)
     }
   }
 
@@ -78,17 +85,19 @@ final class ViewTracker: Sendable {
   }
 
   private func elapsed(_ key: Key, id: UUID) {
-    let counts = state.withLock { state in
-      guard state.visible[key]?.id == id, state.analytics, !state.ended else { return false }
+    let feed: FeedLoad? = state.withLock { state in
+      guard let entry = state.visible[key], entry.id == id, state.analytics, !state.ended else {
+        return nil
+      }
       state.visible.removeValue(forKey: key)
-      return state.viewed.insert(key).inserted
+      return state.viewed.insert(key).inserted ? entry.feed : nil
     }
-    guard counts else { return }
+    guard let feed else { return }
     log.debug("Offer \(key.offerId) was viewed in feed \(key.feedId).")
     viewed(
       WireClientEvent(
         id: UUID().uuidString.lowercased(), name: "offerViewed", occurredAt: clock.now(),
-        properties: ["offerId": key.offerId, "feedId": key.feedId]))
+        properties: ["offerId": key.offerId, "feedId": key.feedId]), feed)
   }
 }
 
@@ -119,7 +128,17 @@ actor EventPipeline {
 
   private struct Queued {
     let event: WireClientEvent
+    let feed: FeedLoad
+    /// The consent's withdrawal count when the view was queued; a later withdrawal drops it.
+    let withdrawals: Int
     var failures = 0
+  }
+
+  /// The newest consent, its number, and how often analytics consent was withdrawn.
+  private struct ConsentState: Sendable {
+    var value: Consent
+    var version = 0
+    var withdrawals = 0
   }
 
   private enum Outcome {
@@ -132,7 +151,7 @@ actor EventPipeline {
 
   private let session: Session
   /// The newest consent and its number, set without waiting, so changes keep their order.
-  private let consent: Locked<(value: Consent, version: Int)>
+  private let consent: Locked<ConsentState>
   private var sentVersion: Int?
   private var queue: [Queued] = []
   private var flushing = false
@@ -147,7 +166,7 @@ actor EventPipeline {
 
   init(session: Session, consent: Consent) {
     self.session = session
-    self.consent = Locked((consent, 0))
+    self.consent = Locked(ConsentState(value: consent))
   }
 
   /// Sends the consent now and then the queue every few seconds, until the client ends.
@@ -168,15 +187,19 @@ actor EventPipeline {
   nonisolated func setConsent(_ consent: Consent) {
     let changed = self.consent.withLock { current in
       guard current.value != consent else { return false }
-      current = (consent, current.version + 1)
+      // Views queued before a withdrawal never leave, also when consent is given again.
+      if current.value.analytics && !consent.analytics { current.withdrawals += 1 }
+      current.value = consent
+      current.version += 1
       return true
     }
     if changed { Task { await flush() } }
   }
 
-  func enqueue(_ event: WireClientEvent) {
-    guard consent.withLock({ $0.value.analytics }), !ended, !stopped else { return }
-    queue.append(Queued(event: event))
+  func enqueue(_ event: WireClientEvent, feed: FeedLoad) {
+    let current = consent.withLock { $0 }
+    guard current.value.analytics, !ended, !stopped else { return }
+    queue.append(Queued(event: event, feed: feed, withdrawals: current.withdrawals))
     if queue.count > Self.capacity {
       session.log.error("The event queue is full; dropping the oldest offer view.")
       queue.removeFirst(queue.count - Self.capacity)
@@ -222,7 +245,8 @@ actor EventPipeline {
   }
 
   private func flushOnce() async {
-    let (current, version) = consent.withLock { $0 }
+    let state = consent.withLock { $0 }
+    let (current, version) = (state.value, state.version)
     if !current.analytics { queue.removeAll() }
     if sentVersion != version {
       do {
@@ -254,6 +278,11 @@ actor EventPipeline {
     while sentVersion == consent.withLock({ $0.version }), consent.withLock({ $0.value.analytics }),
       !ended, !queue.isEmpty
     {
+      // Views from before a withdrawal, or of a feed load the API no longer takes, never leave.
+      let withdrawals = consent.withLock { $0.withdrawals }
+      let now = session.clock.now()
+      queue.removeAll { $0.withdrawals != withdrawals || $0.feed.isExpired(at: now) }
+      guard !queue.isEmpty else { return }
       let batch = queue.prefix(Self.requestLimit).map(\.event)
       let ids = Set(batch.map(\.id))
       do {
@@ -262,13 +291,17 @@ actor EventPipeline {
           .send("POST", "events") { [clock = session.clock] in
             WireSendEvents(sentAt: clock.now(), events: batch)
           }
-          .only { [consent] in consent.withLock { $0.value.analytics } })
+          .only { [consent] in
+            consent.withLock { $0.value.analytics && $0.withdrawals == withdrawals }
+          })
         queue.removeAll { ids.contains($0.event.id) }
         succeeded()
       } catch {
         switch Self.outcome(of: error) {
         case .ignore:
-          if !consent.withLock({ $0.value.analytics }) { queue.removeAll() }
+          let current = consent.withLock { $0 }
+          if !current.value.analytics { queue.removeAll() }
+          queue.removeAll { $0.withdrawals != current.withdrawals }
           return
         case .pause(let retryAfter):
           let before = queue.count

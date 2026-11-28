@@ -231,19 +231,40 @@ final class Session: Sendable {
   }
 
   private func url(_ endpoint: Endpoint) -> URL {
-    var url = baseURL.appendingPathComponent("v1").appendingPathComponent("me")
-    for segment in endpoint.path { url = url.appendingPathComponent(segment) }
-    guard !endpoint.query.isEmpty,
-      var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-    else { return url }
-    components.queryItems = endpoint.query
-    // `+` would read as a space in a query value.
-    components.percentEncodedQuery = components.percentEncodedQuery?
-      .replacingOccurrences(of: "+", with: "%2B")
-    return components.url ?? url
+    let base = baseURL.appendingPathComponent("v1").appendingPathComponent("me")
+    guard var components = URLComponents(url: base, resolvingAgainstBaseURL: false) else {
+      return base
+    }
+    // Each segment is one path segment: a `/`, `?`, or `%` in an id is encoded, never a separator.
+    components.percentEncodedPath += endpoint.path.map {
+      "/" + ($0.addingPercentEncoding(withAllowedCharacters: Self.segmentCharacters) ?? "")
+    }.joined()
+    if !endpoint.query.isEmpty {
+      components.queryItems = endpoint.query
+      // `+` would read as a space in a query value.
+      components.percentEncodedQuery = components.percentEncodedQuery?
+        .replacingOccurrences(of: "+", with: "%2B")
+    }
+    return components.url ?? base
   }
 
+  /// The characters a path segment keeps unencoded (RFC 3986 `pchar` without `%`).
+  private static let segmentCharacters: CharacterSet = {
+    var characters = CharacterSet.urlPathAllowed
+    characters.remove(charactersIn: "/%;")
+    return characters
+  }()
+
   static func backoff(_ attempt: Int) -> Double { attempt == 1 ? 0.5 : 1.5 }
+
+  /// An offer or benefit id as a request names it: 1 to 64 characters and not `.` or `..`, so
+  /// an id from a deep link reaches no other route. Any other is an offer that is not listed.
+  static func pathId(_ id: String) throws -> String {
+    guard (1...64).contains(id.count), id != ".", id != ".." else {
+      throw VeraHubError(.offerNotFound, "No offer or benefit has the id \"\(id.prefix(64))\".")
+    }
+    return id
+  }
 
   static func isValidUserId(_ userId: String) -> Bool {
     let scalars = Array(userId.unicodeScalars)

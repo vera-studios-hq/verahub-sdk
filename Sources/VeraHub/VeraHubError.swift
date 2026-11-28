@@ -26,6 +26,9 @@ public struct VeraHubError: Error, Sendable, CustomStringConvertible {
     public static let userMismatch = Kind(name: "userMismatch")
     /// The offer or benefit is no longer listed for the user. Reload the list.
     public static let offerNotFound = Kind(name: "offerNotFound")
+    /// VeraHub can no longer continue this list. Start a new one with
+    /// ``VeraHubClient/offers(category:)`` or ``VeraHubClient/holdings()``.
+    public static let listExpired = Kind(name: "listExpired")
     /// This SDK version is no longer served. Update the app's VeraHub SDK.
     public static let sdkUnsupported = Kind(name: "sdkUnsupported")
     /// The client is set up wrongly: an invalid `userId`, or tokens VeraHub refuses, such as

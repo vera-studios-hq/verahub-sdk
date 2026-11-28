@@ -1,6 +1,9 @@
 import Foundation
 
 /// What revealing a benefit gave the user, from ``VeraHubClient/reveal(_:)``.
+///
+/// While the SDK's version is `0.x`, a minor version can add a case here and to
+/// ``RevealUnavailableReason``; whether they stay closed is decided before `1.0`.
 public enum RevealResult: Sendable, Hashable {
   /// The user received the holding now. `nextRevealAt` is when they can reveal the benefit for
   /// a new code, `nil` when they never can.

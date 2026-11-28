@@ -14,5 +14,6 @@ let package = Package(
     .testTarget(name: "VeraHubTests", dependencies: ["VeraHub"]),
     .testTarget(name: "VeraHubPreviewTests", dependencies: ["VeraHubPreview"]),
     .testTarget(name: "VeraHubIntegrationTests", dependencies: ["VeraHub"]),
+    .testTarget(name: "VeraHubAPITests", dependencies: ["VeraHub"]),
   ]
 )

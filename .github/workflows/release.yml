@@ -55,8 +55,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          state="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs" \
-            --jq '[.check_runs[] | select(.name != "release") | .conclusion] | if length == 0 then "none" elif all(. == "success" or . == "skipped") then "success" else "failure" end')"
+          set -euo pipefail
+          # Every page of the commit's check runs, not only the first.
+          conclusions="$(gh api --paginate "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" \
+            --jq '.check_runs[] | select(.name != "release") | .conclusion // "pending"')"
+          if [[ -z "$conclusions" ]]; then
+            state=none
+          elif grep -qvxE 'success|skipped' <<<"$conclusions"; then
+            state=failure
+          else
+            state=success
+          fi
           [[ "$state" == "success" ]] || { echo "::error::CI has not passed on $GITHUB_SHA ($state)"; exit 1; }
       - name: Tag and publish
         env:

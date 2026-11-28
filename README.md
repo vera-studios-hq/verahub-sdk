@@ -146,6 +146,7 @@ Calls throw `VeraHubError`; branch on its `kind`:
 | `userDeleted`        | Your backend deleted the user at VeraHub.                             |
 | `userMismatch`       | The token callback returned a token of another user; nothing shown.   |
 | `offerNotFound`      | The offer or benefit is no longer listed; reload.                     |
+| `listExpired`        | VeraHub can no longer continue the list; start a new one.             |
 | `sdkUnsupported`     | This SDK version is no longer served; update it.                      |
 | `misconfigured`      | An invalid `userId`, or tokens of another environment.                |
 | `unexpected`         | An answer this SDK version does not understand; quote the request id. |

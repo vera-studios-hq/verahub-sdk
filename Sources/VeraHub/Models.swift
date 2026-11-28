@@ -112,7 +112,20 @@ public struct Offer: Sendable, Hashable, Identifiable {
   /// Every benefit the user can get from the offer, in VeraHub's order.
   public let benefits: [Benefit]
   /// The feed load the offer was listed in, which its views and its detail name.
-  let feedId: String?
+  let feed: FeedLoad?
+
+  var feedId: String? { feed?.id }
+}
+
+/// One load of an offer list from its first page: its id, the same on every page, and when the
+/// SDK loaded it.
+struct FeedLoad: Sendable, Hashable {
+  let id: String
+  let loadedAt: Date
+
+  func isExpired(at now: Date) -> Bool {
+    now.timeIntervalSince(loadedAt) >= ViewTracker.feedLifetime
+  }
 }
 
 /// Where a tap on a benefit or a holding leads.

@@ -17,6 +17,16 @@ struct WireBrand: Decodable {
   let logo: WireImage
   let logoWide: WireImage?
 
+  private enum CodingKeys: String, CodingKey { case name, logo, logoWide }
+
+  init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    name = try container.decode(String.self, forKey: .name)
+    logo = try container.decode(WireImage.self, forKey: .logo)
+    // An optional image this device cannot read is left out, as if it had none.
+    logoWide = (try? container.decodeIfPresent(WireImage.self, forKey: .logoWide)) ?? nil
+  }
+
   var model: Brand { Brand(name: name, logo: logo.model, logoWide: logoWide?.model) }
 }
 
@@ -62,17 +72,44 @@ struct WireOffer: Decodable {
   let categories: [WireOfferCategory]
   let benefits: [WireBenefit]
 
-  func model(feedId: String?) -> Offer {
+  func model(feed: FeedLoad?) -> Offer {
     Offer(
       id: id, brand: brand.model, valueText: valueText, title: title, subline: subline,
       description: description, images: images.model,
       categories: categories.map { OfferCategory(key: $0.key, name: $0.name) },
-      benefits: benefits.compactMap(\.model), feedId: feedId)
+      benefits: benefits.compactMap(\.model), feed: feed)
+  }
+}
+
+/// One item of a list, or why this SDK version cannot read it: one unreadable item does not
+/// fail its page.
+struct Lossy<Item: Decodable>: Decodable {
+  let item: Item?
+  let failure: String?
+
+  init(from decoder: any Decoder) throws {
+    do {
+      item = try Item(from: decoder)
+      failure = nil
+    } catch {
+      item = nil
+      failure = "\(error)"
+    }
+  }
+}
+
+extension Array {
+  /// The items that could be read, logging those that could not.
+  func readable<Item>(_ list: String, log: Log) -> [Item] where Element == Lossy<Item> {
+    for failure in compactMap(\.failure) {
+      log.error("Skipped an item of \(list) this SDK version cannot read: \(failure)")
+    }
+    return compactMap(\.item)
   }
 }
 
 struct WireOfferList: Decodable {
-  let items: [WireOffer]
+  let items: [Lossy<WireOffer>]
   let feedId: String
   let nextCursor: String?
 }
@@ -86,7 +123,7 @@ struct WireCategory: Decodable {
 }
 
 struct WireCategoryList: Decodable {
-  let items: [WireCategory]
+  let items: [Lossy<WireCategory>]
 }
 
 struct WireClickOut: Decodable {
@@ -110,8 +147,8 @@ struct WireOfferDetail: Decodable {
   let offer: WireOffer
   let user: WireOfferForUser
 
-  func model(feedId: String?) -> OfferDetail {
-    let offer = offer.model(feedId: feedId)
+  func model(feed: FeedLoad?) -> OfferDetail {
+    let offer = offer.model(feed: feed)
     let shown = Set(offer.benefits.map(\.id))
     return OfferDetail(
       offer: offer,
@@ -179,7 +216,7 @@ struct WireHoldingEntry: Decodable {
 }
 
 struct WireHoldingList: Decodable {
-  let items: [WireHoldingEntry]
+  let items: [Lossy<WireHoldingEntry>]
   let nextCursor: String?
 }
 

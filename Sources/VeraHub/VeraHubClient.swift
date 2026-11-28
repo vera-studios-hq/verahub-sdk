@@ -72,8 +72,8 @@ public final class VeraHubClient: Sendable {
       context: context, log: log)
     let pipeline = EventPipeline(session: session, consent: consent)
     self.pipeline = pipeline
-    views = ViewTracker(analytics: consent.analytics, clock: clock, log: log) { event in
-      Task { await pipeline.enqueue(event) }
+    views = ViewTracker(analytics: consent.analytics, clock: clock, log: log) { event, feed in
+      Task { await pipeline.enqueue(event, feed: feed) }
     }
     Task { await pipeline.start() }
     observeBackground()
@@ -94,18 +94,21 @@ public final class VeraHubClient: Sendable {
   ///
   /// - Parameter category: Only offers in this category, by its key; `nil` for all.
   public func offers(category: String? = nil) -> PagedList<Offer> {
-    let feed = Locked<String?>(nil)
+    let feed = Locked<FeedLoad?>(nil)
     return PagedList { [self] cursor in
       var query = Endpoint.benefitKinds
       if let category { query.append(URLQueryItem(name: "category", value: category)) }
       if let cursor { query.append(URLQueryItem(name: "cursor", value: cursor)) }
       let page = try await session.decode(WireOfferList.self, .get("offers", query: query))
-      // One feed load keeps the feedId of its first page.
-      let feedId = feed.withLock { feed in
-        if feed == nil { feed = page.feedId }
+      // One feed load keeps the feedId of its first page, and the time it was loaded.
+      let load = feed.withLock { feed in
+        if feed == nil { feed = FeedLoad(id: page.feedId, loadedAt: session.clock.now()) }
         return feed
       }
-      return (page.items.map { $0.model(feedId: feedId) }, page.nextCursor)
+      return (
+        page.items.readable("the offers", log: session.log).map { $0.model(feed: load) },
+        page.nextCursor
+      )
     }
   }
 
@@ -113,24 +116,25 @@ public final class VeraHubClient: Sendable {
   public func categories() async throws -> [Category] {
     try await session.decode(
       WireCategoryList.self, .get("categories", query: Endpoint.benefitKinds)
-    ).items.map(\.model)
+    ).items.readable("the categories", log: session.log).map(\.model)
   }
 
   /// The detail of an offer from a list, with what belongs to the user.
   public func offerDetail(for offer: Offer) async throws -> OfferDetail {
-    try await offerDetail(offerId: offer.id, feedId: offer.feedId)
+    try await offerDetail(offerId: offer.id, feed: offer.feed)
   }
 
   /// The detail of an offer by its id, for an offer opened from elsewhere, such as a deep link
   /// or a holding.
   public func offerDetail(offerId: String) async throws -> OfferDetail {
-    try await offerDetail(offerId: offerId, feedId: nil)
+    try await offerDetail(offerId: offerId, feed: nil)
   }
 
-  private func offerDetail(offerId: String, feedId: String?) async throws -> OfferDetail {
+  private func offerDetail(offerId: String, feed: FeedLoad?) async throws -> OfferDetail {
     try await session.decode(
-      WireOfferDetail.self, .get("offers", offerId, query: Endpoint.benefitKinds)
-    ).model(feedId: feedId)
+      WireOfferDetail.self,
+      .get("offers", try Session.pathId(offerId), query: Endpoint.benefitKinds)
+    ).model(feed: feed)
   }
 
   // MARK: Coupons
@@ -144,7 +148,7 @@ public final class VeraHubClient: Sendable {
   /// cooldown.
   public func reveal(benefitId: String) async throws -> RevealResult {
     switch try await session.decodeOrProblem(
-      WireRevealResult.self, .post("benefits", benefitId, "reveal"))
+      WireRevealResult.self, .post("benefits", try Session.pathId(benefitId), "reveal"))
     {
     case .success(let answer):
       return try answer.model()
@@ -162,7 +166,9 @@ public final class VeraHubClient: Sendable {
       var query = Endpoint.benefitKinds
       if let cursor { query.append(URLQueryItem(name: "cursor", value: cursor)) }
       let page = try await session.decode(WireHoldingList.self, .get("holdings", query: query))
-      return (page.items.compactMap(\.model), page.nextCursor)
+      return (
+        page.items.readable("the holdings", log: session.log).compactMap(\.model), page.nextCursor
+      )
     }
   }
 
